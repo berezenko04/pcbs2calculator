@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react'
 import clsx from 'clsx'
-import { Calculator, Cpu, Monitor, MemoryStick, TrendingUp, Settings, X } from 'lucide-react'
+import { Calculator, Cpu, Monitor, MemoryStick, TrendingUp, Settings, X, ChevronDown } from 'lucide-react'
 
 interface CPU {
   id: string
@@ -324,18 +324,21 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 </div>
                 <span className="text-xs text-slate-400">{availableCPUs.length}/{cpus.length}</span>
               </div>
-              <select
-                value={state.selectedCPU || ''}
-                onChange={(e) => setState((p) => ({ ...p, selectedCPU: e.target.value }))}
-                className="w-full p-3 border border-slate-300 rounded-lg mb-4"
-              >
-                <option value="">Select CPU...</option>
-                {availableCPUs.map((cpu) => (
-                  <option key={cpu.id} value={cpu.id}>
-                    {cpu.part_name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={state.selectedCPU || ''}
+                  onChange={(e) => setState((p) => ({ ...p, selectedCPU: e.target.value }))}
+                  className="w-full p-3 pr-10 border border-slate-300 rounded-lg mb-4 appearance-none cursor-pointer bg-white"
+                >
+                  <option value="">Select CPU...</option>
+                  {availableCPUs.map((cpu) => (
+                    <option key={cpu.id} value={cpu.id}>
+                      {cpu.part_name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
+              </div>
 
               {state.selectedCPU && (() => {
                 const cpu = cpus.find((c) => c.id === state.selectedCPU)
@@ -360,18 +363,21 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 </div>
                 <span className="text-xs text-slate-400">{availableGPUs.length}/{gpus.length}</span>
               </div>
-              <select
-                value={state.selectedGPU || ''}
-                onChange={(e) => setState((p) => ({ ...p, selectedGPU: e.target.value }))}
-                className="w-full p-3 border border-slate-300 rounded-lg mb-4"
-              >
-                <option value="">Select GPU...</option>
-                {availableGPUs.map((gpu) => (
-                  <option key={gpu.id} value={gpu.id}>
-                    {gpu.part_name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={state.selectedGPU || ''}
+                  onChange={(e) => setState((p) => ({ ...p, selectedGPU: e.target.value }))}
+                  className="w-full p-3 pr-10 border border-slate-300 rounded-lg mb-4 appearance-none cursor-pointer bg-white"
+                >
+                  <option value="">Select GPU...</option>
+                  {availableGPUs.map((gpu) => (
+                    <option key={gpu.id} value={gpu.id}>
+                      {gpu.part_name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
+              </div>
 
               {state.selectedGPU && (() => {
                 const gpu = gpus.find((g) => g.id === state.selectedGPU)
@@ -395,18 +401,21 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 </div>
                 <span className="text-xs text-slate-400">{availableRAMs.length}/{rams.length}</span>
               </div>
-              <select
-                value={state.selectedRAM || ''}
-                onChange={(e) => setState((p) => ({ ...p, selectedRAM: e.target.value }))}
-                className="w-full p-3 border border-slate-300 rounded-lg mb-4"
-              >
-                <option value="">Select RAM...</option>
-                {availableRAMs.map((ram) => (
-                  <option key={ram.id} value={ram.id}>
-                    {ram.part_name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={state.selectedRAM || ''}
+                  onChange={(e) => setState((p) => ({ ...p, selectedRAM: e.target.value }))}
+                  className="w-full p-3 pr-10 border border-slate-300 rounded-lg mb-4 appearance-none cursor-pointer bg-white"
+                >
+                  <option value="">Select RAM...</option>
+                  {availableRAMs.map((ram) => (
+                    <option key={ram.id} value={ram.id}>
+                      {ram.part_name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
+              </div>
 
               {state.selectedRAM && (() => {
                 const ram = rams.find((r) => r.id === state.selectedRAM)
