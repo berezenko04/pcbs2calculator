@@ -1,0 +1,530 @@
+'use client'
+
+import React, { useState, useCallback, useEffect } from 'react'
+import clsx from 'clsx'
+import { Calculator, Cpu, Monitor, MemoryStick, TrendingUp, Settings, X } from 'lucide-react'
+
+interface CPU {
+  id: string
+  part_name: string
+  manufacturer: string
+  price: number
+  level: number
+  percent_through?: number | boolean
+  basic_cpu_score: number
+  cores: number
+  can_overclock: boolean
+  frequency: number
+  series: string
+}
+
+interface GPU {
+  id: string
+  part_name: string
+  manufacturer: string
+  price: number
+  level: number
+  percent_through?: number | boolean
+  single_gpu_graphics_score: number
+  vram_gb: number
+  wattage: number
+  chipset: string
+  chipset_series: string
+}
+
+interface RAM {
+  id: string
+  part_name: string
+  manufacturer: string
+  price: number
+  level: number
+  percent_through?: number | boolean
+  total_size_gb: number
+  frequency: number
+  ram_type: string
+  component_lighting: string
+  voltage: number
+}
+
+interface Props {
+  cpus: CPU[]
+  gpus: GPU[]
+  rams: RAM[]
+}
+
+interface CalculatorState {
+  selectedCPU: string | null
+  selectedGPU: string | null
+  selectedRAM: string | null
+  overclockCPU: boolean
+  overclockGPU: boolean
+}
+
+interface LevelSettings {
+  level: number
+  percent: number
+}
+
+interface ScoreResult {
+  cpuScore: number
+  gpuScore: number
+  ramScore: number
+  totalScore: number
+  rank: 'Elite' | 'Performance' | 'Good' | 'Average' | 'Budget' | 'Error'
+  cpuDetails?: { level: number; series: string; cores: number; frequency: number }
+  gpuDetails?: { level: number; series: string; vram_gb: number; wattage: number }
+  ramDetails?: { level: number; total_size_gb: number; frequency: number; voltage: number }
+}
+
+function isLocked(
+  componentLevel: number,
+  componentPercent: number | boolean | undefined | null,
+  userLevel: number,
+  userPercent: number,
+): boolean {
+  if (componentLevel < userLevel) return false
+  if (componentLevel > userLevel) return true
+  if (componentPercent === true || componentPercent == null) return false
+  return userPercent < Number(componentPercent)
+}
+
+export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
+  const [state, setState] = useState<CalculatorState>({
+    selectedCPU: null,
+    selectedGPU: null,
+    selectedRAM: null,
+    overclockCPU: false,
+    overclockGPU: false,
+  })
+
+  const [levelSettings, setLevelSettings] = useState<LevelSettings | null>(null)
+  const [settingsReady, setSettingsReady] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [draftLevel, setDraftLevel] = useState(1)
+  const [draftPercent, setDraftPercent] = useState(0)
+
+  const maxLevel = Math.max(
+    ...cpus.map((c) => c.level),
+    ...gpus.map((g) => g.level),
+    ...rams.map((r) => r.level),
+  )
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('pcbs2_level')
+      if (raw) {
+        const parsed = JSON.parse(raw) as LevelSettings
+        if (typeof parsed.level === 'number' && typeof parsed.percent === 'number') {
+          setLevelSettings(parsed)
+          setDraftLevel(parsed.level)
+          setDraftPercent(parsed.percent)
+          setSettingsReady(true)
+          return
+        }
+      }
+    } catch {}
+    setShowSettings(true)
+    setSettingsReady(true)
+  }, [])
+
+  const saveSettings = useCallback((lvl: number, pct: number) => {
+    const s: LevelSettings = { level: lvl, percent: pct }
+    localStorage.setItem('pcbs2_level', JSON.stringify(s))
+    setLevelSettings(s)
+    setShowSettings(false)
+  }, [])
+
+  const openSettings = () => {
+    setDraftLevel(levelSettings?.level ?? 1)
+    setDraftPercent(levelSettings?.percent ?? 0)
+    setShowSettings(true)
+  }
+
+  const availableCPUs = levelSettings
+    ? cpus.filter((c) => !isLocked(c.level, c.percent_through, levelSettings.level, levelSettings.percent))
+    : cpus
+  const availableGPUs = levelSettings
+    ? gpus.filter((g) => !isLocked(g.level, g.percent_through, levelSettings.level, levelSettings.percent))
+    : gpus
+  const availableRAMs = levelSettings
+    ? rams.filter((r) => !isLocked(r.level, r.percent_through, levelSettings.level, levelSettings.percent))
+    : rams
+
+  useEffect(() => {
+    if (!levelSettings) return
+    setState((prev) => ({
+      ...prev,
+      selectedCPU: prev.selectedCPU && availableCPUs.some((c) => c.id === prev.selectedCPU) ? prev.selectedCPU : null,
+      selectedGPU: prev.selectedGPU && availableGPUs.some((g) => g.id === prev.selectedGPU) ? prev.selectedGPU : null,
+      selectedRAM: prev.selectedRAM && availableRAMs.some((r) => r.id === prev.selectedRAM) ? prev.selectedRAM : null,
+    }))
+  }, [levelSettings])
+
+  const calculateScores = useCallback((): ScoreResult => {
+    if (!state.selectedCPU || !state.selectedGPU || !state.selectedRAM) {
+      return { cpuScore: 0, gpuScore: 0, ramScore: 0, totalScore: 0, rank: 'Error' }
+    }
+
+    const selectedCPU = cpus.find((cpu) => cpu.id === state.selectedCPU)
+    const selectedGPU = gpus.find((gpu) => gpu.id === state.selectedGPU)
+    const selectedRAM = rams.find((ram) => ram.id === state.selectedRAM)
+
+    if (!selectedCPU || !selectedGPU || !selectedRAM) {
+      return { cpuScore: 0, gpuScore: 0, ramScore: 0, totalScore: 0, rank: 'Error' }
+    }
+
+    let cpuScore = selectedCPU.basic_cpu_score
+    if (state.overclockCPU && selectedCPU.can_overclock) {
+      cpuScore = Math.round(cpuScore * 1.1)
+    }
+
+    let gpuScore = selectedGPU.single_gpu_graphics_score
+    if (state.overclockGPU) {
+      gpuScore = Math.round(gpuScore * 1.05)
+    }
+
+    const ramBase = 1000
+    const ramFreq = Math.floor(selectedRAM.frequency / 100)
+    const ramCap = Math.floor(selectedRAM.total_size_gb / 8)
+    let ramScore = ramBase + ramFreq + ramCap
+    if (state.overclockGPU) {
+      ramScore = Math.round(ramScore * 1.05)
+    }
+
+    const totalScore = cpuScore + gpuScore + ramScore
+
+    let rank: ScoreResult['rank'] = 'Budget'
+    if (totalScore >= 30000) rank = 'Elite'
+    else if (totalScore >= 20000) rank = 'Performance'
+    else if (totalScore >= 15000) rank = 'Good'
+    else if (totalScore >= 8000) rank = 'Average'
+
+    return {
+      cpuScore,
+      gpuScore,
+      ramScore,
+      totalScore,
+      rank,
+      cpuDetails: { level: selectedCPU.level, series: selectedCPU.series, cores: selectedCPU.cores, frequency: selectedCPU.frequency },
+      gpuDetails: { level: selectedGPU.level, series: selectedGPU.chipset_series, vram_gb: selectedGPU.vram_gb, wattage: selectedGPU.wattage },
+      ramDetails: { level: selectedRAM.level, total_size_gb: selectedRAM.total_size_gb, frequency: selectedRAM.frequency, voltage: selectedRAM.voltage },
+    }
+  }, [state, cpus, gpus, rams])
+
+  const scores = calculateScores()
+  const formatNumber = (num: number): string => new Intl.NumberFormat('en-US').format(num)
+
+  if (!settingsReady) return null
+
+  return (
+    <>
+
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative animate-in fade-in zoom-in-95">
+            <button onClick={() => { if (levelSettings) setShowSettings(false) }} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="bg-indigo-100 w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="h-7 w-7 text-indigo-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900">Your Level</h2>
+              <p className="text-slate-500 mt-1">Set your in-game level to see available components</p>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="flex justify-between text-sm font-medium text-slate-700 mb-2">
+                  <span>Level</span>
+                  <span className="text-indigo-600 font-bold text-lg">{draftLevel}</span>
+                </label>
+                <input
+                  type="range"
+                  min={1}
+                  max={maxLevel}
+                  value={draftLevel}
+                  onChange={(e) => setDraftLevel(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+                <div className="flex justify-between text-xs text-slate-400 mt-1">
+                  <span>1</span>
+                  <span>{maxLevel}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="flex justify-between text-sm font-medium text-slate-700 mb-2">
+                  <span>Progress through level</span>
+                  <span className="text-indigo-600 font-bold text-lg">{draftPercent}%</span>
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={draftPercent}
+                  onChange={(e) => setDraftPercent(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+                <div className="flex justify-between text-xs text-slate-400 mt-1">
+                  <span>0%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => saveSettings(draftLevel, draftPercent)}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                {levelSettings ? 'Save' : 'Get Started'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4 sm:py-12 sm:px-6 lg:py-16 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+
+          <div className="text-center mb-12 relative">
+            {levelSettings && (
+              <button
+                onClick={openSettings}
+                className="absolute right-0 top-0 p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-xl transition-all"
+                title="Change level settings"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
+            )}
+
+            <div className="flex justify-center mb-4">
+              <div className="bg-blue-100 p-3 rounded-full">
+                <Calculator className="h-8 w-8 text-blue-600" />
+              </div>
+            </div>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">PCBS2 3DMark Calculator</h1>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Calculate your estimated 3DMark score based on your component selections
+            </p>
+
+            {levelSettings && (
+              <div className="mt-4 inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full text-sm font-medium">
+                <TrendingUp className="h-4 w-4" />
+                Level {levelSettings.level} · {levelSettings.percent}% through
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <Cpu className="h-6 w-6 text-blue-600 mr-2" />
+                  <h2 className="text-xl font-semibold text-slate-900">CPU</h2>
+                </div>
+                <span className="text-xs text-slate-400">{availableCPUs.length}/{cpus.length}</span>
+              </div>
+              <select
+                value={state.selectedCPU || ''}
+                onChange={(e) => setState((p) => ({ ...p, selectedCPU: e.target.value }))}
+                className="w-full p-3 border border-slate-300 rounded-lg mb-4"
+              >
+                <option value="">Select CPU...</option>
+                {availableCPUs.map((cpu) => (
+                  <option key={cpu.id} value={cpu.id}>
+                    {cpu.part_name}
+                  </option>
+                ))}
+              </select>
+
+              {state.selectedCPU && (() => {
+                const cpu = cpus.find((c) => c.id === state.selectedCPU)
+                if (!cpu) return null
+                return (
+                  <div className="p-4 bg-blue-50 rounded-lg space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-600">Score:</span><span className="font-semibold">{formatNumber(cpu.basic_cpu_score)}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-600">Cores:</span><span className="font-semibold">{cpu.cores}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{cpu.frequency} MHz</span></div>
+                    <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{cpu.series}</span></div>
+                    {cpu.can_overclock && <div className="text-green-600 font-semibold">✓ Overclockable</div>}
+                  </div>
+                )
+              })()}
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <Monitor className="h-6 w-6 text-green-600 mr-2" />
+                  <h2 className="text-xl font-semibold text-slate-900">GPU</h2>
+                </div>
+                <span className="text-xs text-slate-400">{availableGPUs.length}/{gpus.length}</span>
+              </div>
+              <select
+                value={state.selectedGPU || ''}
+                onChange={(e) => setState((p) => ({ ...p, selectedGPU: e.target.value }))}
+                className="w-full p-3 border border-slate-300 rounded-lg mb-4"
+              >
+                <option value="">Select GPU...</option>
+                {availableGPUs.map((gpu) => (
+                  <option key={gpu.id} value={gpu.id}>
+                    {gpu.part_name}
+                  </option>
+                ))}
+              </select>
+
+              {state.selectedGPU && (() => {
+                const gpu = gpus.find((g) => g.id === state.selectedGPU)
+                if (!gpu) return null
+                return (
+                  <div className="p-4 bg-green-50 rounded-lg space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-600">Score:</span><span className="font-semibold">{formatNumber(gpu.single_gpu_graphics_score)}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-600">VRAM:</span><span className="font-semibold">{gpu.vram_gb} GB</span></div>
+                    <div className="flex justify-between"><span className="text-slate-600">TDP:</span><span className="font-semibold">{gpu.wattage} W</span></div>
+                    <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{gpu.chipset_series}</span></div>
+                  </div>
+                )
+              })()}
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <MemoryStick className="h-6 w-6 text-purple-600 mr-2" />
+                  <h2 className="text-xl font-semibold text-slate-900">RAM</h2>
+                </div>
+                <span className="text-xs text-slate-400">{availableRAMs.length}/{rams.length}</span>
+              </div>
+              <select
+                value={state.selectedRAM || ''}
+                onChange={(e) => setState((p) => ({ ...p, selectedRAM: e.target.value }))}
+                className="w-full p-3 border border-slate-300 rounded-lg mb-4"
+              >
+                <option value="">Select RAM...</option>
+                {availableRAMs.map((ram) => (
+                  <option key={ram.id} value={ram.id}>
+                    {ram.part_name}
+                  </option>
+                ))}
+              </select>
+
+              {state.selectedRAM && (() => {
+                const ram = rams.find((r) => r.id === state.selectedRAM)
+                if (!ram) return null
+                return (
+                  <div className="p-4 bg-purple-50 rounded-lg space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-600">Capacity:</span><span className="font-semibold">{ram.total_size_gb} GB</span></div>
+                    <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{ram.frequency} MHz</span></div>
+                    <div className="flex justify-between"><span className="text-slate-600">Type:</span><span className="font-semibold">{ram.ram_type}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-600">Lighting:</span><span className="font-semibold">{ram.component_lighting}</span></div>
+                  </div>
+                )
+              })()}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
+              <TrendingUp className="h-5 w-5 text-orange-600 mr-2" />
+              Overclock Options
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {([
+                { label: 'CPU Overclock', desc: '+10% CPU score', key: 'overclockCPU' as const },
+                { label: 'GPU Overclock', desc: '+5% GPU & RAM score', key: 'overclockGPU' as const },
+              ]).map(({ label, desc, key }) => (
+                <div key={key} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                  <div>
+                    <h3 className="font-medium text-slate-900">{label}</h3>
+                    <p className="text-sm text-slate-600">{desc}</p>
+                  </div>
+                  <button
+                    onClick={() => setState((p) => ({ ...p, [key]: !p[key] }))}
+                    className={clsx(
+                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                      state[key] ? 'bg-orange-500' : 'bg-slate-300',
+                    )}
+                  >
+                    <span className={clsx(
+                      'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                      state[key] ? 'translate-x-6' : 'translate-x-1',
+                    )} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl shadow-2xl p-8 text-white">
+            <h2 className="text-2xl font-bold mb-6 text-center">Your 3DMark Score Estimate</h2>
+
+            {state.selectedCPU && state.selectedGPU && state.selectedRAM ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[
+                    { label: 'CPU Score', value: scores.cpuScore, color: 'text-blue-400' },
+                    { label: 'GPU Score', value: scores.gpuScore, color: 'text-green-400' },
+                    { label: 'RAM Score', value: scores.ramScore, color: 'text-purple-400' },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                      <div className="text-sm text-slate-300 mb-1">{label}</div>
+                      <div className={`text-3xl font-bold ${color}`}>{formatNumber(value)}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-white/20 pt-6 text-center">
+                  <div className="text-sm text-slate-300 mb-1">Total Score</div>
+                  <div className="text-5xl font-bold">{formatNumber(scores.totalScore)}</div>
+                  <div className={clsx(
+                    'inline-flex items-center px-4 py-2 mt-4 rounded-full text-sm font-medium border',
+                    scores.rank === 'Elite' && 'bg-green-500/20 text-green-300 border-green-500/30',
+                    scores.rank === 'Performance' && 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+                    scores.rank === 'Good' && 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+                    scores.rank === 'Average' && 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+                    scores.rank === 'Budget' && 'bg-red-500/20 text-red-300 border-red-500/30',
+                    scores.rank === 'Error' && 'bg-gray-500/20 text-gray-300 border-gray-500/30',
+                  )}>
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    {scores.rank} Performance
+                  </div>
+                </div>
+
+                {scores.cpuDetails && (
+                  <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-sm">
+                    <h3 className="text-lg font-semibold mb-3">Component Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div><span className="text-slate-400">CPU:</span> {scores.cpuDetails.series} (Lvl {scores.cpuDetails.level})</div>
+                      <div><span className="text-slate-400">Cores:</span> {scores.cpuDetails.cores}</div>
+                      <div><span className="text-slate-400">Freq:</span> {scores.cpuDetails.frequency} MHz</div>
+                      <div><span className="text-slate-400">GPU:</span> {scores.gpuDetails?.series} (Lvl {scores.gpuDetails?.level})</div>
+                      <div><span className="text-slate-400">VRAM:</span> {scores.gpuDetails?.vram_gb} GB</div>
+                      <div><span className="text-slate-400">RAM:</span> {scores.ramDetails?.total_size_gb} GB @ {scores.ramDetails?.frequency} MHz</div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, overclockCPU: false, overclockGPU: false })}
+                    className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition-colors"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Calculator className="h-16 w-16 mx-auto mb-4 text-slate-400" />
+                <h3 className="text-xl font-semibold mb-2">No Selection</h3>
+                <p className="text-slate-400">Select all three components to calculate your score</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
