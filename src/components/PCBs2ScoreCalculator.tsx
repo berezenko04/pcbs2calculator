@@ -410,7 +410,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   <option value="">Select RAM...</option>
                   {availableRAMs.map((ram) => (
                     <option key={ram.id} value={ram.id}>
-                      {ram.part_name}
+                      {ram.manufacturer} {ram.part_name} {ram.total_size_gb}GB {ram.frequency}MHz
                     </option>
                   ))}
                 </select>
@@ -422,6 +422,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 if (!ram) return null
                 return (
                   <div className="p-4 bg-purple-50 rounded-lg space-y-2 text-sm">
+                    <div className="font-semibold text-purple-800 mb-1">{ram.manufacturer} {ram.part_name}</div>
                     <div className="flex justify-between"><span className="text-slate-600">Capacity:</span><span className="font-semibold">{ram.total_size_gb} GB</span></div>
                     <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{ram.frequency} MHz</span></div>
 
