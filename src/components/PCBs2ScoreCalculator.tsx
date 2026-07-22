@@ -54,6 +54,7 @@ interface CalculatorState {
   selectedCPU: string | null
   selectedGPU: string | null
   selectedRAM: string | null
+  ramQuantity: number
   overclockCPU: boolean
   overclockGPU: boolean
 }
@@ -91,6 +92,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
     selectedCPU: null,
     selectedGPU: null,
     selectedRAM: null,
+    ramQuantity: 1,
     overclockCPU: false,
     overclockGPU: false,
   })
@@ -181,9 +183,10 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
       gpuScore = Math.round(gpuScore * 1.05)
     }
 
-    const ramBase = 1000
-    const ramFreq = Math.floor(selectedRAM.frequency / 100)
-    const ramCap = Math.floor(selectedRAM.total_size_gb / 8)
+    const qty = state.ramQuantity || 1
+    const ramBase = 1000 * qty
+    const ramFreq = Math.floor(selectedRAM.frequency / 100) * qty
+    const ramCap = Math.floor((selectedRAM.total_size_gb * qty) / 8)
     let ramScore = ramBase + ramFreq + ramCap
     if (state.overclockGPU) {
       ramScore = Math.round(ramScore * 1.05)
@@ -417,13 +420,29 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
               </div>
 
+              {state.selectedRAM && (
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-sm text-slate-600">Qty:</span>
+                  <button
+                    onClick={() => setState((p) => ({ ...p, ramQuantity: Math.max(1, (p.ramQuantity || 1) - 1) }))}
+                    className="w-8 h-8 rounded-lg border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors"
+                  >−</button>
+                  <span className="w-6 text-center font-semibold text-slate-900">{state.ramQuantity || 1}</span>
+                  <button
+                    onClick={() => setState((p) => ({ ...p, ramQuantity: ((p.ramQuantity || 1) + 1) }))}
+                    className="w-8 h-8 rounded-lg border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors"
+                  >+</button>
+                </div>
+              )}
+
               {state.selectedRAM && (() => {
                 const ram = rams.find((r) => r.id === state.selectedRAM)
                 if (!ram) return null
+                const qty = state.ramQuantity || 1
                 return (
                   <div className="p-4 bg-purple-50 rounded-lg space-y-2 text-sm">
                     <div className="font-semibold text-purple-800 mb-1">{ram.manufacturer} {ram.part_name}</div>
-                    <div className="flex justify-between"><span className="text-slate-600">Capacity:</span><span className="font-semibold">{ram.total_size_gb} GB</span></div>
+                    <div className="flex justify-between"><span className="text-slate-600">Total Capacity:</span><span className="font-semibold">{ram.total_size_gb * qty} GB ({qty}×{ram.total_size_gb}GB)</span></div>
                     <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{ram.frequency} MHz</span></div>
 
                   </div>
@@ -515,7 +534,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
                 <div className="flex justify-center">
                   <button
-                    onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, overclockCPU: false, overclockGPU: false })}
+                    onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, overclockCPU: false, overclockGPU: false })}
                     className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition-colors"
                   >
                     Reset
