@@ -378,7 +378,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   <option value="">Select GPU...</option>
                   {availableGPUs.map((gpu) => (
                     <option key={gpu.id} value={gpu.id}>
-                      {gpu.part_name}
+                      {gpu.manufacturer} {gpu.part_name}
                     </option>
                   ))}
                 </select>
