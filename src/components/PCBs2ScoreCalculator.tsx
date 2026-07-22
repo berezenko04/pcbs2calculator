@@ -41,8 +41,6 @@ interface RAM {
   percent_through?: number | boolean
   total_size_gb: number
   frequency: number
-  ram_type: string
-  component_lighting: string
   voltage: number
 }
 
@@ -417,8 +415,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   <div className="p-4 bg-purple-50 rounded-lg space-y-2 text-sm">
                     <div className="flex justify-between"><span className="text-slate-600">Capacity:</span><span className="font-semibold">{ram.total_size_gb} GB</span></div>
                     <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{ram.frequency} MHz</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">Type:</span><span className="font-semibold">{ram.ram_type}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">Lighting:</span><span className="font-semibold">{ram.component_lighting}</span></div>
+
                   </div>
                 )
               })()}
