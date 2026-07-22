@@ -94,22 +94,26 @@ function isLocked(
 }
 
 function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, overclock: boolean): number {
-  const base = overclock && cpu.can_overclock
-    ? (cpu.overclock_basic_cpu_score || cpu.basic_cpu_score)
-    : cpu.basic_cpu_score
+  const base = Number(overclock && cpu.can_overclock
+    ? (cpu.overclock_basic_cpu_score ?? cpu.basic_cpu_score)
+    : cpu.basic_cpu_score) || 0
+  if (base === 0) return 0
 
-  const a = cpu.coreclockmultiplier ?? 0
-  const b = cpu.memchannelsmultiplier ?? 0
-  const c = cpu.memclockmultiplier ?? 0
-  const d = cpu.finaladjustment ?? 0
-  const defMem = cpu.default_memory_speed || 2666
+  const freq = Number(cpu.frequency) || 0
+  const ramFreq = Number(ram.frequency) || 0
+  const a = Number(cpu.coreclockmultiplier) || 0
+  const b = Number(cpu.memchannelsmultiplier) || 0
+  const c = Number(cpu.memclockmultiplier) || 0
+  const d = Number(cpu.finaladjustment) || 0
+  const defMem = Number(cpu.default_memory_speed) || 2666
   const sticks = Math.max(1, ramQty)
 
-  const opt = a * cpu.frequency + b * 2 + c * defMem + d
-  const cur = a * cpu.frequency + b * sticks + c * ram.frequency + d
+  const opt = a * freq + b * 2 + c * defMem + d
+  const cur = a * freq + b * sticks + c * ramFreq + d
 
   if (opt === 0) return base
-  return Math.round(base * cur / opt)
+  const result = Math.round(base * cur / opt)
+  return Number.isFinite(result) ? result : base
 }
 
 function calcTotalScore(cpuScore: number, gpuScore: number): number {
