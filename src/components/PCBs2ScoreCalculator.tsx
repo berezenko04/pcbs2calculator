@@ -429,7 +429,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   >−</button>
                   <span className="w-6 text-center font-semibold text-slate-900">{state.ramQuantity || 1}</span>
                   <button
-                    onClick={() => setState((p) => ({ ...p, ramQuantity: ((p.ramQuantity || 1) + 1) }))}
+                    onClick={() => setState((p) => ({ ...p, ramQuantity: Math.min(8, (p.ramQuantity || 1) + 1) }))}
                     className="w-8 h-8 rounded-lg border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors"
                   >+</button>
                 </div>
