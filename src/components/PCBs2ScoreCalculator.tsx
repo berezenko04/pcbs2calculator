@@ -12,10 +12,16 @@ interface CPU {
   level: number
   percent_through?: number | boolean
   basic_cpu_score: number
+  overclock_basic_cpu_score?: number
   cores: number
   can_overclock: boolean
   frequency: number
   series: string
+  default_memory_speed: number
+  coreclockmultiplier?: number
+  memchannelsmultiplier?: number
+  memclockmultiplier?: number
+  finaladjustment?: number
 }
 
 interface GPU {
@@ -26,6 +32,7 @@ interface GPU {
   level: number
   percent_through?: number | boolean
   single_gpu_graphics_score: number
+  oc_single_gpu_score?: number
   vram_gb: number
   wattage: number
   chipset: string
@@ -67,12 +74,11 @@ interface LevelSettings {
 interface ScoreResult {
   cpuScore: number
   gpuScore: number
-  ramScore: number
   totalScore: number
   rank: 'Elite' | 'Performance' | 'Good' | 'Average' | 'Budget' | 'Error'
   cpuDetails?: { level: number; series: string; cores: number; frequency: number }
   gpuDetails?: { level: number; series: string; vram_gb: number; wattage: number }
-  ramDetails?: { level: number; total_size_gb: number; frequency: number; voltage: number }
+  ramDetails?: { level: number; total_size_gb: number; frequency: number; voltage: number; quantity: number }
 }
 
 function isLocked(
@@ -85,6 +91,39 @@ function isLocked(
   if (componentLevel > userLevel) return true
   if (componentPercent === true || componentPercent == null) return false
   return userPercent < Number(componentPercent)
+}
+
+function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, overclock: boolean): number {
+  const base = overclock && cpu.can_overclock
+    ? (cpu.overclock_basic_cpu_score || cpu.basic_cpu_score)
+    : cpu.basic_cpu_score
+
+  const a = cpu.coreclockmultiplier ?? 0
+  const b = cpu.memchannelsmultiplier ?? 0
+  const c = cpu.memclockmultiplier ?? 0
+  const d = cpu.finaladjustment ?? 0
+  const defMem = cpu.default_memory_speed || 2666
+  const sticks = Math.max(1, ramQty)
+
+  const opt = a * cpu.frequency + b * 2 + c * defMem + d
+  const cur = a * cpu.frequency + b * sticks + c * ram.frequency + d
+
+  if (opt === 0) return base
+  return Math.round(base * cur / opt)
+}
+
+function calcTotalScore(cpuScore: number, gpuScore: number): number {
+  if (cpuScore <= 0 || gpuScore <= 0) return 0
+  const w = 0.15
+  return Math.round(1 / (w / cpuScore + (1 - w) / gpuScore))
+}
+
+function getRank(totalScore: number): ScoreResult['rank'] {
+  if (totalScore >= 30000) return 'Elite'
+  if (totalScore >= 20000) return 'Performance'
+  if (totalScore >= 15000) return 'Good'
+  if (totalScore >= 8000) return 'Average'
+  return 'Budget'
 }
 
 export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
@@ -160,69 +199,35 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
     }))
   }, [levelSettings])
 
-  const calculateScores = useCallback((): ScoreResult => {
-    if (!state.selectedCPU || !state.selectedGPU || !state.selectedRAM) {
-      return { cpuScore: 0, gpuScore: 0, ramScore: 0, totalScore: 0, rank: 'Error' }
-    }
-
-    const selectedCPU = cpus.find((cpu) => cpu.id === state.selectedCPU)
-    const selectedGPU = gpus.find((gpu) => gpu.id === state.selectedGPU)
-    const selectedRAM = rams.find((ram) => ram.id === state.selectedRAM)
-
-    if (!selectedCPU || !selectedGPU || !selectedRAM) {
-      return { cpuScore: 0, gpuScore: 0, ramScore: 0, totalScore: 0, rank: 'Error' }
-    }
-
-    let cpuScore = selectedCPU.basic_cpu_score
-    if (state.overclockCPU && selectedCPU.can_overclock) {
-      cpuScore = Math.round(cpuScore * 1.1)
-    }
-
-    let gpuScore = selectedGPU.single_gpu_graphics_score
-    if (state.overclockGPU) {
-      gpuScore = Math.round(gpuScore * 1.05)
-    }
-
-    const qty = state.ramQuantity || 1
-    const ramBase = 1000 * qty
-    const ramFreq = Math.floor(selectedRAM.frequency / 100) * qty
-    const ramCap = Math.floor((selectedRAM.total_size_gb * qty) / 8)
-    let ramScore = ramBase + ramFreq + ramCap
-    if (state.overclockGPU) {
-      ramScore = Math.round(ramScore * 1.05)
-    }
-
-    const totalScore = cpuScore + gpuScore + ramScore
-
-    let rank: ScoreResult['rank'] = 'Budget'
-    if (totalScore >= 30000) rank = 'Elite'
-    else if (totalScore >= 20000) rank = 'Performance'
-    else if (totalScore >= 15000) rank = 'Good'
-    else if (totalScore >= 8000) rank = 'Average'
-
-    return {
-      cpuScore,
-      gpuScore,
-      ramScore,
-      totalScore,
-      rank,
-      cpuDetails: { level: selectedCPU.level, series: selectedCPU.series, cores: selectedCPU.cores, frequency: selectedCPU.frequency },
-      gpuDetails: { level: selectedGPU.level, series: selectedGPU.chipset_series, vram_gb: selectedGPU.vram_gb, wattage: selectedGPU.wattage },
-      ramDetails: { level: selectedRAM.level, total_size_gb: selectedRAM.total_size_gb, frequency: selectedRAM.frequency, voltage: selectedRAM.voltage },
-    }
-  }, [state, cpus, gpus, rams])
-
-  const scores = calculateScores()
   const formatNumber = (num: number): string => new Intl.NumberFormat('en-US').format(num)
+
+  const selectedCPU = state.selectedCPU ? cpus.find((c) => c.id === state.selectedCPU) : null
+  const selectedGPU = state.selectedGPU ? gpus.find((g) => g.id === state.selectedGPU) : null
+  const selectedRAM = state.selectedRAM ? rams.find((r) => r.id === state.selectedRAM) : null
+
+  let cpuScore = 0
+  let gpuScore = 0
+  let totalScore = 0
+  let rank: ScoreResult['rank'] = 'Error'
+
+  if (selectedCPU && selectedGPU && selectedRAM) {
+    const gpuBase = state.overclockGPU
+      ? (selectedGPU.oc_single_gpu_score || selectedGPU.single_gpu_graphics_score)
+      : selectedGPU.single_gpu_graphics_score
+    gpuScore = gpuBase
+
+    cpuScore = calcCpuScore(selectedCPU, selectedRAM, state.ramQuantity, state.overclockCPU)
+    totalScore = calcTotalScore(cpuScore, gpuScore)
+    rank = getRank(totalScore)
+  }
 
   if (!settingsReady) return null
 
   return (
     <>
-
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
             <button onClick={() => { if (levelSettings) setShowSettings(false) }} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
               <X className="h-5 w-5" />
             </button>
@@ -285,10 +290,8 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
         </div>
       )}
 
-
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4 sm:py-12 sm:px-6 lg:py-16 lg:px-8">
         <div className="max-w-7xl mx-auto">
-
           <div className="text-center mb-12 relative">
             {levelSettings && (
               <button
@@ -343,19 +346,15 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
               </div>
 
-              {state.selectedCPU && (() => {
-                const cpu = cpus.find((c) => c.id === state.selectedCPU)
-                if (!cpu) return null
-                return (
-                  <div className="p-4 bg-blue-50 rounded-lg space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-slate-600">Score:</span><span className="font-semibold">{formatNumber(cpu.basic_cpu_score)}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">Cores:</span><span className="font-semibold">{cpu.cores}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{cpu.frequency} MHz</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{cpu.series}</span></div>
-                    {cpu.can_overclock && <div className="text-green-600 font-semibold">✓ Overclockable</div>}
-                  </div>
-                )
-              })()}
+              {selectedCPU && (
+                <div className="p-4 bg-blue-50 rounded-lg space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-slate-600">Score:</span><span className="font-semibold">{formatNumber(selectedCPU.basic_cpu_score)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Cores:</span><span className="font-semibold">{selectedCPU.cores}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{selectedCPU.frequency} MHz</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{selectedCPU.series}</span></div>
+                  {selectedCPU.can_overclock && <div className="text-green-600 font-semibold">Overclockable</div>}
+                </div>
+              )}
             </div>
 
             <div className="bg-white rounded-xl shadow-lg p-6">
@@ -382,18 +381,14 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
               </div>
 
-              {state.selectedGPU && (() => {
-                const gpu = gpus.find((g) => g.id === state.selectedGPU)
-                if (!gpu) return null
-                return (
-                  <div className="p-4 bg-green-50 rounded-lg space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-slate-600">Score:</span><span className="font-semibold">{formatNumber(gpu.single_gpu_graphics_score)}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">VRAM:</span><span className="font-semibold">{gpu.vram_gb} GB</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">TDP:</span><span className="font-semibold">{gpu.wattage} W</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{gpu.chipset_series}</span></div>
-                  </div>
-                )
-              })()}
+              {selectedGPU && (
+                <div className="p-4 bg-green-50 rounded-lg space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-slate-600">Score:</span><span className="font-semibold">{formatNumber(selectedGPU.single_gpu_graphics_score)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">VRAM:</span><span className="font-semibold">{selectedGPU.vram_gb} GB</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">TDP:</span><span className="font-semibold">{selectedGPU.wattage} W</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{selectedGPU.chipset_series}</span></div>
+                </div>
+              )}
             </div>
 
             <div className="bg-white rounded-xl shadow-lg p-6">
@@ -420,7 +415,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
               </div>
 
-              {state.selectedRAM && (
+              {selectedRAM && (
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-sm text-slate-600">Qty:</span>
                   <button
@@ -435,19 +430,13 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 </div>
               )}
 
-              {state.selectedRAM && (() => {
-                const ram = rams.find((r) => r.id === state.selectedRAM)
-                if (!ram) return null
-                const qty = state.ramQuantity || 1
-                return (
-                  <div className="p-4 bg-purple-50 rounded-lg space-y-2 text-sm">
-                    <div className="font-semibold text-purple-800 mb-1">{ram.manufacturer} {ram.part_name}</div>
-                    <div className="flex justify-between"><span className="text-slate-600">Total Capacity:</span><span className="font-semibold">{ram.total_size_gb * qty} GB ({qty}×{ram.total_size_gb}GB)</span></div>
-                    <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{ram.frequency} MHz</span></div>
-
-                  </div>
-                )
-              })()}
+              {selectedRAM && (
+                <div className="p-4 bg-purple-50 rounded-lg space-y-2 text-sm">
+                  <div className="font-semibold text-purple-800 mb-1">{selectedRAM.manufacturer} {selectedRAM.part_name}</div>
+                  <div className="flex justify-between"><span className="text-slate-600">Total:</span><span className="font-semibold">{selectedRAM.total_size_gb * state.ramQuantity} GB ({state.ramQuantity}×{selectedRAM.total_size_gb}GB)</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{selectedRAM.frequency} MHz</span></div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -458,8 +447,8 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {([
-                { label: 'CPU Overclock', desc: '+10% CPU score', key: 'overclockCPU' as const },
-                { label: 'GPU Overclock', desc: '+5% GPU & RAM score', key: 'overclockGPU' as const },
+                { label: 'CPU Overclock', desc: 'Increases CPU score', key: 'overclockCPU' as const },
+                { label: 'GPU Overclock', desc: 'Increases GPU score', key: 'overclockGPU' as const },
               ]).map(({ label, desc, key }) => (
                 <div key={key} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
                   <div>
@@ -486,51 +475,46 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
           <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl shadow-2xl p-8 text-white">
             <h2 className="text-2xl font-bold mb-6 text-center">Your 3DMark Score Estimate</h2>
 
-            {state.selectedCPU && state.selectedGPU && state.selectedRAM ? (
+            {selectedCPU && selectedGPU && selectedRAM && rank !== 'Error' ? (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {[
-                    { label: 'CPU Score', value: scores.cpuScore, color: 'text-blue-400' },
-                    { label: 'GPU Score', value: scores.gpuScore, color: 'text-green-400' },
-                    { label: 'RAM Score', value: scores.ramScore, color: 'text-purple-400' },
-                  ].map(({ label, value, color }) => (
-                    <div key={label} className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                      <div className="text-sm text-slate-300 mb-1">{label}</div>
-                      <div className={`text-3xl font-bold ${color}`}>{formatNumber(value)}</div>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                    <div className="text-sm text-slate-300 mb-1">CPU Score</div>
+                    <div className="text-3xl font-bold text-blue-400">{formatNumber(cpuScore)}</div>
+                  </div>
+                  <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                    <div className="text-sm text-slate-300 mb-1">GPU Score</div>
+                    <div className="text-3xl font-bold text-green-400">{formatNumber(gpuScore)}</div>
+                  </div>
                 </div>
 
                 <div className="border-t border-white/20 pt-6 text-center">
                   <div className="text-sm text-slate-300 mb-1">Total Score</div>
-                  <div className="text-5xl font-bold">{formatNumber(scores.totalScore)}</div>
+                  <div className="text-5xl font-bold">{formatNumber(totalScore)}</div>
                   <div className={clsx(
                     'inline-flex items-center px-4 py-2 mt-4 rounded-full text-sm font-medium border',
-                    scores.rank === 'Elite' && 'bg-green-500/20 text-green-300 border-green-500/30',
-                    scores.rank === 'Performance' && 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-                    scores.rank === 'Good' && 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-                    scores.rank === 'Average' && 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-                    scores.rank === 'Budget' && 'bg-red-500/20 text-red-300 border-red-500/30',
-                    scores.rank === 'Error' && 'bg-gray-500/20 text-gray-300 border-gray-500/30',
+                    rank === 'Elite' && 'bg-green-500/20 text-green-300 border-green-500/30',
+                    rank === 'Performance' && 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+                    rank === 'Good' && 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+                    rank === 'Average' && 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+                    rank === 'Budget' && 'bg-red-500/20 text-red-300 border-red-500/30',
                   )}>
                     <TrendingUp className="h-4 w-4 mr-2" />
-                    {scores.rank} Performance
+                    {rank} Performance
                   </div>
                 </div>
 
-                {scores.cpuDetails && (
-                  <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-sm">
-                    <h3 className="text-lg font-semibold mb-3">Component Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <div><span className="text-slate-400">CPU:</span> {scores.cpuDetails.series} (Lvl {scores.cpuDetails.level})</div>
-                      <div><span className="text-slate-400">Cores:</span> {scores.cpuDetails.cores}</div>
-                      <div><span className="text-slate-400">Freq:</span> {scores.cpuDetails.frequency} MHz</div>
-                      <div><span className="text-slate-400">GPU:</span> {scores.gpuDetails?.series} (Lvl {scores.gpuDetails?.level})</div>
-                      <div><span className="text-slate-400">VRAM:</span> {scores.gpuDetails?.vram_gb} GB</div>
-                      <div><span className="text-slate-400">RAM:</span> {scores.ramDetails?.total_size_gb} GB @ {scores.ramDetails?.frequency} MHz</div>
-                    </div>
+                <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-sm">
+                  <h3 className="text-lg font-semibold mb-3">Component Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div><span className="text-slate-400">CPU:</span> {selectedCPU.series} (Lvl {selectedCPU.level})</div>
+                    <div><span className="text-slate-400">Cores:</span> {selectedCPU.cores}</div>
+                    <div><span className="text-slate-400">Freq:</span> {selectedCPU.frequency} MHz</div>
+                    <div><span className="text-slate-400">GPU:</span> {selectedGPU.chipset_series} (Lvl {selectedGPU.level})</div>
+                    <div><span className="text-slate-400">VRAM:</span> {selectedGPU.vram_gb} GB</div>
+                    <div><span className="text-slate-400">RAM:</span> {selectedRAM.total_size_gb * state.ramQuantity} GB @ {selectedRAM.frequency} MHz</div>
                   </div>
-                )}
+                </div>
 
                 <div className="flex justify-center">
                   <button
