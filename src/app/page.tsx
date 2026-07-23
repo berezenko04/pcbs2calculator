@@ -23,7 +23,7 @@ export default function HomePage() {
   }, [])
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800">
       <div className="text-slate-400 text-lg">Loading components...</div>
     </div>
   )

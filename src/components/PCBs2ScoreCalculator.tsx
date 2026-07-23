@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import clsx from 'clsx'
-import { Calculator, Cpu, Gpu, MemoryStick, TrendingUp, Settings, X, ChevronDown } from 'lucide-react'
+import { Calculator, Cpu, Gpu, MemoryStick, TrendingUp, Settings, X, ChevronDown, Moon, Sun } from 'lucide-react'
 
 interface CPU {
   id: string
@@ -212,19 +212,19 @@ function SearchableSelect<T extends { id: string }>({ options, value, onChange, 
         onChange={(e) => { setSearch(e.target.value); setIsOpen(true) }}
         onFocus={() => { setIsOpen(true); setSearch('') }}
         placeholder={placeholder}
-        className="w-full p-2.5 pr-10 border border-slate-300 rounded-lg cursor-pointer bg-white text-sm"
+        className="w-full p-2.5 pr-10 border border-slate-300 dark:border-gray-600 rounded-lg cursor-pointer bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
       />
-      <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
+      <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 dark:text-gray-500 pointer-events-none" />
       {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {filtered.length === 0 ? (
-            <div className="p-3 text-slate-400 text-sm">No results</div>
+            <div className="p-3 text-slate-400 dark:text-gray-500 text-sm">No results</div>
           ) : (
             filtered.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                className={clsx('w-full text-left p-3 text-sm hover:bg-blue-50 transition-colors', item.id === value && 'bg-blue-100 font-semibold')}
+                className={clsx('w-full text-left p-3 text-sm dark:text-gray-100 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors', item.id === value && 'bg-blue-100 dark:bg-blue-900 dark:text-white font-semibold')}
                 onClick={() => { onChange(item.id); setIsOpen(false); setSearch('') }}
               >
                 {getLabel(item)}
@@ -254,6 +254,19 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
   const [showSettings, setShowSettings] = useState(false)
   const [draftLevel, setDraftLevel] = useState(1)
   const [draftPercent, setDraftPercent] = useState(0)
+  const [darkMode, setDarkMode] = useState(false)
+
+  useEffect(() => {
+    const stored = localStorage.getItem('pcbs2_dark')
+    const isDark = stored === 'true'
+    setDarkMode(isDark)
+    document.documentElement.classList.toggle('dark', isDark)
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('pcbs2_dark', String(darkMode))
+    document.documentElement.classList.toggle('dark', darkMode)
+  }, [darkMode])
 
   const allLevels = [
     ...cpus.map((c) => Number(c.level)),
@@ -347,24 +360,24 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
     <>
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
-            <button onClick={() => { if (levelSettings) setShowSettings(false) }} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
+            <button onClick={() => { if (levelSettings) setShowSettings(false) }} className="absolute top-4 right-4 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:text-gray-400 transition-colors">
               <X className="h-5 w-5" />
             </button>
 
             <div className="text-center mb-6">
-              <div className="bg-indigo-100 w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="h-7 w-7 text-indigo-600" />
+              <div className="bg-indigo-100 dark:bg-indigo-900 w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900">Your Level</h2>
-              <p className="text-slate-500 mt-1">Set your in-game level to see available components</p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-gray-100">Your Level</h2>
+              <p className="text-slate-500 dark:text-gray-400 mt-1">Set your in-game level to see available components</p>
             </div>
 
             <div className="space-y-6">
               <div>
-                <label className="flex justify-between text-sm font-medium text-slate-700 mb-2">
+                <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
                   <span>Level</span>
-                  <span className="text-indigo-600 font-bold text-lg">{draftLevel}</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{draftLevel}</span>
                 </label>
                 <input
                   type="range"
@@ -372,18 +385,18 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   max={maxLevel}
                   value={draftLevel}
                   onChange={(e) => setDraftLevel(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
-                <div className="flex justify-between text-xs text-slate-400 mt-1">
+                <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
                   <span>1</span>
                   <span>{maxLevel}</span>
                 </div>
               </div>
 
               <div>
-                <label className="flex justify-between text-sm font-medium text-slate-700 mb-2">
+                <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
                   <span>Progress through level</span>
-                  <span className="text-indigo-600 font-bold text-lg">{draftPercent}%</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{draftPercent}%</span>
                 </label>
                 <input
                   type="range"
@@ -391,9 +404,9 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   max={100}
                   value={draftPercent}
                   onChange={(e) => setDraftPercent(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
-                <div className="flex justify-between text-xs text-slate-400 mt-1">
+                <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
                   <span>0%</span>
                   <span>100%</span>
                 </div>
@@ -410,31 +423,40 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
         </div>
       )}
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4 sm:py-12 sm:px-6 lg:py-16 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:py-12 sm:px-6 lg:py-16 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 relative">
             {levelSettings && (
-              <button
-                onClick={openSettings}
-                className="absolute right-0 top-0 p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-xl transition-all"
-                title="Change level settings"
-              >
-                <Settings className="h-5 w-5" />
-              </button>
+              <>
+                <button
+                  onClick={() => setDarkMode((p) => !p)}
+                  className="absolute right-14 top-0 p-3 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 hover:bg-slate-200 dark:bg-gray-700/50 dark:hover:bg-gray-700/50 rounded-xl transition-all"
+                  title="Toggle dark mode"
+                >
+                  {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                </button>
+                <button
+                  onClick={openSettings}
+                  className="absolute right-0 top-0 p-3 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 hover:bg-slate-200 dark:bg-gray-700/50 dark:hover:bg-gray-700/50 rounded-xl transition-all"
+                  title="Change level settings"
+                >
+                  <Settings className="h-5 w-5" />
+                </button>
+              </>
             )}
 
             <div className="flex justify-center mb-4">
-              <div className="bg-blue-100 p-3 rounded-full">
-                <Calculator className="h-8 w-8 text-blue-600" />
+              <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-full">
+                <Calculator className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">PCBS2 3DMark Calculator</h1>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            <h1 className="text-4xl font-bold text-slate-900 dark:text-gray-100 mb-2">PCBS2 3DMark Calculator</h1>
+            <p className="text-lg text-slate-600 dark:text-gray-400 max-w-2xl mx-auto">
               Calculate your estimated 3DMark score based on your component selections
             </p>
 
             {levelSettings && (
-              <div className="mt-4 inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full text-sm font-medium">
+              <div className="mt-4 inline-flex items-center gap-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-full text-sm font-medium">
                 <TrendingUp className="h-4 w-4" />
                 Level {levelSettings.level} · {levelSettings.percent}% through
               </div>
@@ -442,13 +464,13 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-            <div className="bg-white rounded-xl shadow-lg p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <Cpu className="h-6 w-6 text-blue-600 mr-2" />
-                  <h2 className="text-xl font-semibold text-slate-900">CPU</h2>
+                  <Cpu className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-2" />
+                  <h2 className="text-xl font-semibold text-slate-900 dark:text-gray-100">CPU</h2>
                 </div>
-                <span className="text-xs text-slate-400">{availableCPUs.length}/{cpus.length}</span>
+                <span className="text-xs text-slate-400 dark:text-gray-500">{availableCPUs.length}/{cpus.length}</span>
               </div>
               <SearchableSelect
                   options={availableCPUs}
@@ -463,15 +485,15 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 />
 
               {selectedCPU && (
-                <div className="p-4 bg-blue-50 rounded-lg space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-slate-600">Cores:</span><span className="font-semibold">{selectedCPU.cores}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{selectedCPU.frequency} MHz</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{selectedCPU.series}</span></div>
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
+                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Cores:</span><span className="font-semibold">{selectedCPU.cores}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Freq:</span><span className="font-semibold">{selectedCPU.frequency} MHz</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Series:</span><span className="font-semibold">{selectedCPU.series}</span></div>
                   {selectedCPU.can_overclock && selectedCPU.max_freq && selectedCPU.max_freq > selectedCPU.frequency && (
                     <div className="pt-2 border-t border-blue-200 space-y-2 mt-1">
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600">CPU Freq:</span>
-                        <span className="font-semibold text-blue-700">{state.cpuFreq || selectedCPU.frequency} MHz</span>
+                        <span className="text-slate-600 dark:text-gray-400">CPU Freq:</span>
+                        <span className="font-semibold text-blue-700 dark:text-blue-300">{state.cpuFreq || selectedCPU.frequency} MHz</span>
                       </div>
                       <input
                         type="range"
@@ -480,26 +502,26 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                         step={Math.max(1, Math.round((selectedCPU.max_freq - selectedCPU.frequency) / 20))}
                         value={state.cpuFreq || selectedCPU.frequency}
                         onChange={(e) => setState((p) => ({ ...p, cpuFreq: Number(e.target.value) }))}
-                        className="w-full h-1.5 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        className="w-full h-1.5 bg-blue-200 dark:bg-blue-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
                       />
-                      <div className="flex justify-between text-xs text-slate-400 mt-0.5">
+                      <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-0.5">
                         <span>{selectedCPU.frequency} MHz</span>
                         <span>{selectedCPU.max_freq} MHz</span>
                       </div>
                     </div>
                   )}
-                  {selectedCPU.can_overclock && <div className="text-green-600 font-semibold text-xs">Overclockable</div>}
+                  {selectedCPU.can_overclock && <div className="text-green-600 dark:text-green-400 font-semibold text-xs">Overclockable</div>}
                 </div>
               )}
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <Gpu className="h-6 w-6 text-green-600 mr-2" />
-                  <h2 className="text-xl font-semibold text-slate-900">GPU</h2>
+                  <Gpu className="h-6 w-6 text-green-600 dark:text-green-400 mr-2" />
+                  <h2 className="text-xl font-semibold text-slate-900 dark:text-gray-100">GPU</h2>
                 </div>
-                <span className="text-xs text-slate-400">{availableGPUs.length}/{gpus.length}</span>
+                <span className="text-xs text-slate-400 dark:text-gray-500">{availableGPUs.length}/{gpus.length}</span>
               </div>
               <SearchableSelect
                   options={availableGPUs}
@@ -513,15 +535,15 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 />
 
               {selectedGPU && (
-                <div className="p-4 bg-green-50 rounded-lg space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-slate-600">VRAM:</span><span className="font-semibold">{selectedGPU.vram_gb} GB</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600">TDP:</span><span className="font-semibold">{selectedGPU.wattage} W</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{selectedGPU.chipset_series}</span></div>
+                <div className="p-4 bg-green-50 dark:bg-green-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
+                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">VRAM:</span><span className="font-semibold">{selectedGPU.vram_gb} GB</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">TDP:</span><span className="font-semibold">{selectedGPU.wattage} W</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Series:</span><span className="font-semibold">{selectedGPU.chipset_series}</span></div>
                   {selectedGPU.oc_single_gpu_score && selectedGPU.base_core_clock_freq && selectedGPU.gpu_max_clock && selectedGPU.gpu_max_clock > selectedGPU.base_core_clock_freq && (
                     <div className="pt-2 border-t border-green-200 space-y-2 mt-1">
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600">Core Clock:</span>
-                        <span className="font-semibold text-green-700">{state.gpuCoreFreq || selectedGPU.base_core_clock_freq} MHz</span>
+                        <span className="text-slate-600 dark:text-gray-400">Core Clock:</span>
+                        <span className="font-semibold text-green-700 dark:text-green-300">{state.gpuCoreFreq || selectedGPU.base_core_clock_freq} MHz</span>
                       </div>
                       <input
                         type="range"
@@ -530,15 +552,15 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                         step={1}
                         value={state.gpuCoreFreq || selectedGPU.base_core_clock_freq}
                         onChange={(e) => setState((p) => ({ ...p, gpuCoreFreq: Number(e.target.value) }))}
-                        className="w-full h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                        className="w-full h-1.5 bg-green-200 dark:bg-green-800 rounded-lg appearance-none cursor-pointer accent-green-600"
                       />
-                      <div className="flex justify-between text-xs text-slate-400 mt-0.5">
+                      <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-0.5">
                         <span>{selectedGPU.base_core_clock_freq} MHz</span>
                         <span>{selectedGPU.gpu_max_clock} MHz</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600">Mem Clock:</span>
-                        <span className="font-semibold text-green-700">{state.gpuMemFreq || selectedGPU.base_mem_clock_freq} MHz</span>
+                        <span className="text-slate-600 dark:text-gray-400">Mem Clock:</span>
+                        <span className="font-semibold text-green-700 dark:text-green-300">{state.gpuMemFreq || selectedGPU.base_mem_clock_freq} MHz</span>
                       </div>
                       <input
                         type="range"
@@ -547,9 +569,9 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                         step={1}
                         value={state.gpuMemFreq || selectedGPU.base_mem_clock_freq}
                         onChange={(e) => setState((p) => ({ ...p, gpuMemFreq: Number(e.target.value) }))}
-                        className="w-full h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                        className="w-full h-1.5 bg-green-200 dark:bg-green-800 rounded-lg appearance-none cursor-pointer accent-green-600"
                       />
-                      <div className="flex justify-between text-xs text-slate-400 mt-0.5">
+                      <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-0.5">
                         <span>{selectedGPU.base_mem_clock_freq} MHz</span>
                         <span>{selectedGPU.gpu_max_mem_clock} MHz</span>
                       </div>
@@ -559,13 +581,13 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
               )}
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <MemoryStick className="h-6 w-6 text-purple-600 mr-2" />
-                  <h2 className="text-xl font-semibold text-slate-900">RAM</h2>
+                  <MemoryStick className="h-6 w-6 text-purple-600 dark:text-purple-400 mr-2" />
+                  <h2 className="text-xl font-semibold text-slate-900 dark:text-gray-100">RAM</h2>
                 </div>
-                <span className="text-xs text-slate-400">{availableRAMs.length}/{rams.length}</span>
+                <span className="text-xs text-slate-400 dark:text-gray-500">{availableRAMs.length}/{rams.length}</span>
               </div>
               <SearchableSelect
                   options={availableRAMs}
@@ -577,23 +599,23 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
               {selectedRAM && (
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="text-sm text-slate-600">Qty:</span>
+                  <span className="text-sm text-slate-600 dark:text-gray-400">Qty:</span>
                   <button
                     onClick={() => setState((p) => ({ ...p, ramQuantity: Math.max(1, (p.ramQuantity || 1) - 1) }))}
-                    className="w-8 h-8 rounded-lg border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors"
+                    className="w-8 h-8 rounded-lg border border-slate-300 dark:border-gray-600 flex items-center justify-center text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
                   >−</button>
-                  <span className="w-6 text-center font-semibold text-slate-900">{state.ramQuantity || 1}</span>
+                  <span className="w-6 text-center font-semibold text-slate-900 dark:text-gray-100">{state.ramQuantity || 1}</span>
                   <button
                     onClick={() => setState((p) => ({ ...p, ramQuantity: Math.min(maxRamQuantity, (p.ramQuantity || 1) + 1) }))}
-                    className="w-8 h-8 rounded-lg border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors"
+                    className="w-8 h-8 rounded-lg border border-slate-300 dark:border-gray-600 flex items-center justify-center text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
                   >+</button>
                 </div>
               )}
 
               {selectedRAM && (
-                <div className="p-4 bg-purple-50 rounded-lg space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-slate-600">Total:</span><span className="font-semibold">{selectedRAM.total_size_gb * state.ramQuantity} GB ({state.ramQuantity}×{selectedRAM.total_size_gb}GB)</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600">Freq (rated):</span><span className="font-semibold">{selectedRAM.frequency} MHz</span></div>
+                <div className="p-4 bg-purple-50 dark:bg-purple-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
+                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Total:</span><span className="font-semibold">{selectedRAM.total_size_gb * state.ramQuantity} GB ({state.ramQuantity}×{selectedRAM.total_size_gb}GB)</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Freq (rated):</span><span className="font-semibold">{selectedRAM.frequency} MHz</span></div>
                   {(() => {
                     const cpuDef = selectedCPU?.default_memory_speed ?? selectedRAM.frequency
                     const defFreq = Math.min(selectedRAM.frequency, cpuDef)
@@ -607,7 +629,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                     return (
                       <>
                         <div className="flex justify-between items-center">
-                          <span className="text-slate-600">Freq (BIOS):</span>
+                          <span className="text-slate-600 dark:text-gray-400">Freq (BIOS):</span>
                           <input
                             type="number"
                             min={defFreq}
@@ -618,27 +640,27 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                               const v = e.target.value ? Math.min(Math.max(Number(e.target.value), defFreq), maxFreq) : defFreq
                               setFreq(v)
                             }}
-                            className="w-24 p-1 text-right border border-purple-300 rounded bg-white text-slate-900 font-semibold text-sm"
+                            className="w-24 p-1 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-sm"
                           />
                         </div>
                         <div className="flex gap-1.5 mt-1.5">
                           <button
                             type="button"
                             onClick={() => setFreq(null)}
-                            className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', !isCustom && curVal === defFreq ? 'bg-purple-200 text-purple-800' : 'bg-white/60 text-slate-500 hover:bg-white')}
+                            className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', !isCustom && curVal === defFreq ? 'bg-purple-200 dark:bg-purple-700 text-purple-800 dark:text-purple-200' : 'bg-white dark:bg-gray-800/60 text-slate-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700')}
                           >Default</button>
                           <button
                             type="button"
                             onClick={() => setFreq(xmpFreq)}
-                            className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', isCustom && curVal === xmpFreq ? 'bg-purple-200 text-purple-800' : 'bg-white/60 text-slate-500 hover:bg-white')}
+                            className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', isCustom && curVal === xmpFreq ? 'bg-purple-200 dark:bg-purple-700 text-purple-800 dark:text-purple-200' : 'bg-white dark:bg-gray-800/60 text-slate-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700')}
                           >XMP</button>
 
                         </div>
                         {isCustom && curVal !== xmpFreq && (
-                          <div className="text-xs text-amber-600 bg-amber-50 p-1.5 rounded mt-1">XMP disabled: using {curVal} MHz instead of rated {xmpFreq} MHz</div>
+                          <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/50 p-1.5 rounded mt-1">XMP disabled: using {curVal} MHz instead of rated {xmpFreq} MHz</div>
                         )}
                         {!isCustom && xmpFreq > cpuDef && (
-                          <div className="text-xs text-slate-400 bg-white/50 p-1.5 rounded mt-1">Capped to CPU default ({defFreq} MHz). Enable XMP for {xmpFreq} MHz</div>
+                          <div className="text-xs text-slate-400 dark:text-gray-500 bg-white dark:bg-gray-800/50 p-1.5 rounded mt-1">Capped to CPU default ({defFreq} MHz). Enable XMP for {xmpFreq} MHz</div>
                         )}
                       </>
                     )
@@ -654,21 +676,21 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
             {selectedCPU && selectedGPU && selectedRAM && rank !== 'Error' ? (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                    <div className="bg-blue-500/20 p-2.5 rounded-lg">
+                    <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                    <div className="bg-blue-500/20 dark:bg-blue-400/20 p-2.5 rounded-lg">
                       <Cpu className="h-5 w-5 text-blue-400" />
                     </div>
                     <div>
-                      <div className="text-xs text-slate-400 uppercase tracking-wider">CPU Score</div>
+                      <div className="text-xs text-slate-400 dark:text-gray-500 uppercase tracking-wider">CPU Score</div>
                       <div className="text-2xl font-bold text-blue-400">{formatNumber(cpuScore)}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                    <div className="bg-green-500/20 p-2.5 rounded-lg">
+                    <div className="bg-green-500/20 dark:bg-green-400/20 p-2.5 rounded-lg">
                       <Gpu className="h-5 w-5 text-green-400" />
                     </div>
                     <div>
-                      <div className="text-xs text-slate-400 uppercase tracking-wider">GPU Score</div>
+                      <div className="text-xs text-slate-400 dark:text-gray-500 uppercase tracking-wider">GPU Score</div>
                       <div className="text-2xl font-bold text-green-400">{formatNumber(gpuScore)}</div>
                     </div>
                   </div>
@@ -679,7 +701,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                     <div className="w-full border-t border-white/10" />
                   </div>
                   <div className="relative flex justify-center">
-                    <span className="bg-slate-800 px-4 py-1 rounded-full text-xs text-slate-400 border border-white/10">TOTAL</span>
+                    <span className="bg-slate-800 px-4 py-1 rounded-full text-xs text-slate-400 dark:text-gray-500 border border-white/10">TOTAL</span>
                   </div>
                 </div>
 
@@ -688,7 +710,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   <div className={clsx(
                     'inline-flex items-center gap-2 px-5 py-2 mt-3 rounded-full text-sm font-semibold border',
                     rank === 'Elite' && 'bg-green-500/20 text-green-300 border-green-500/30',
-                    rank === 'Performance' && 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+                    rank === 'Performance' && 'bg-blue-500/20 dark:bg-blue-400/20 text-blue-300 border-blue-500/30',
                     rank === 'Good' && 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
                     rank === 'Average' && 'bg-orange-500/20 text-orange-300 border-orange-500/30',
                     rank === 'Budget' && 'bg-red-500/20 text-red-300 border-red-500/30',
@@ -701,7 +723,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 <div className="flex justify-center">
                   <button
                     onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, cpuFreq: 0, gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null })}
-                    className="px-5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-slate-400 hover:text-white transition-colors"
+                    className="px-5 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-sm text-slate-300 hover:text-white transition-colors"
                   >
                     Reset
                   </button>
@@ -709,9 +731,9 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
               </div>
             ) : (
               <div className="text-center py-12">
-                <Calculator className="h-16 w-16 mx-auto mb-4 text-slate-400" />
+                <Calculator className="h-16 w-16 mx-auto mb-4 text-slate-400 dark:text-gray-500" />
                 <h3 className="text-xl font-semibold mb-2">No Selection</h3>
-                <p className="text-slate-400">Select all three components to calculate your score</p>
+                <p className="text-slate-400 dark:text-gray-500">Select all three components to calculate your score</p>
               </div>
             )}
           </div>
