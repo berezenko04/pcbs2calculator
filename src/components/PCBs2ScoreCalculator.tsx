@@ -41,6 +41,9 @@ interface GPU {
   percent_through?: number | boolean
   single_gpu_graphics_score: number
   oc_single_gpu_score?: number
+  double_gpu_graphics_score?: number | string
+  oc_double_gpu_score?: number | string
+  gpu_power_increase?: number
   vram_gb: number
   wattage: number
   chipset: string
@@ -76,6 +79,7 @@ interface CalculatorState {
   selectedRAM: string | null
   ramQuantity: number
   cpuFreq: number
+  gpuQuantity: number
   gpuCoreFreq: number
   gpuMemFreq: number
   effectiveRamFreq: number | null
@@ -146,10 +150,21 @@ function calcTotalScore(cpuScore: number, gpuScore: number): number {
   return Math.trunc(1 / (w / cpuScore + (1 - w) / gpuScore))
 }
 
-function calcGpuScore(gpu: GPU, coreFreq?: number, memFreq?: number): number {
-  const baseScore = Number(gpu.single_gpu_graphics_score) || 0
+function supportsSli(gpu: GPU): boolean {
+  return gpu.double_gpu_graphics_score !== undefined
+    && gpu.double_gpu_graphics_score !== null
+    && gpu.double_gpu_graphics_score !== 'false'
+}
+
+function calcGpuScore(gpu: GPU, coreFreq?: number, memFreq?: number, gpuQuantity?: number): number {
+  const isDual = gpuQuantity === 2 && supportsSli(gpu)
+  const baseScore = isDual
+    ? Number(gpu.double_gpu_graphics_score) || 0
+    : Number(gpu.single_gpu_graphics_score) || 0
   if (baseScore === 0) return 0
-  const ocScore = Number(gpu.oc_single_gpu_score ?? baseScore)
+  const ocScore = isDual
+    ? Number(gpu.oc_double_gpu_score ?? gpu.double_gpu_graphics_score ?? baseScore)
+    : Number(gpu.oc_single_gpu_score ?? baseScore)
   if (ocScore === baseScore) return ocScore
 
   const baseCore = Number(gpu.base_core_clock_freq)
@@ -280,6 +295,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
     selectedRAM: null,
     ramQuantity: 1,
     cpuFreq: 0,
+    gpuQuantity: 1,
     gpuCoreFreq: 0,
     gpuMemFreq: 0,
     effectiveRamFreq: null,
@@ -390,7 +406,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
   if (selectedCPU && selectedGPU && selectedRAM) {
     cpuScore = calcCpuScore(selectedCPU, selectedRAM, state.ramQuantity, state.cpuFreq || undefined, state.effectiveRamFreq ?? undefined)
-    gpuScore = calcGpuScore(selectedGPU, state.gpuCoreFreq || undefined, state.gpuMemFreq || undefined)
+    gpuScore = calcGpuScore(selectedGPU, state.gpuCoreFreq || undefined, state.gpuMemFreq || undefined, state.gpuQuantity)
     totalScore = calcTotalScore(cpuScore, gpuScore)
     rank = getRank(totalScore)
   }
@@ -577,7 +593,8 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   value={state.selectedGPU}
                   onChange={(id) => setState((p) => {
                     const gpu = gpus.find((g) => g.id === id)
-                    return { ...p, selectedGPU: id, gpuCoreFreq: gpu?.base_core_clock_freq ?? 0, gpuMemFreq: gpu?.base_mem_clock_freq ?? 0 }
+                    const qty = gpu && supportsSli(gpu) ? p.gpuQuantity : 1
+                    return { ...p, selectedGPU: id, gpuQuantity: qty, gpuCoreFreq: gpu?.base_core_clock_freq ?? 0, gpuMemFreq: gpu?.base_mem_clock_freq ?? 0 }
                   })}
                   placeholder={t('select_gpu')}
                   getLabel={(gpu) => `${gpu.manufacturer} ${gpu.part_name}`}
@@ -587,7 +604,35 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
               {selectedGPU && (
                 <div className="p-4 bg-green-50 dark:bg-green-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
                   <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">{t('vram')}</span><span className="font-semibold">{selectedGPU.vram_gb} {t('gb')}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">{t('tdp')}</span><span className="font-semibold">{selectedGPU.wattage} {t('w')}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">{t('tdp')}</span><span className="font-semibold">{selectedGPU.wattage + (state.gpuQuantity === 2 && supportsSli(selectedGPU) ? (selectedGPU.gpu_power_increase ?? 0) : 0)} {t('w')}</span></div>
+                  {supportsSli(selectedGPU) && (
+                    <div className="flex items-center justify-between pt-2 border-t border-green-200">
+                      <span className="flex items-center gap-1.5 text-slate-600 dark:text-gray-400">
+                        <span className="text-xs font-medium bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">SLI</span>
+                        {t('gpu_qty')}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setState((p) => ({ ...p, gpuQuantity: 1 }))}
+                          className={clsx(
+                            'px-3 py-1 text-xs font-medium rounded-lg transition-colors',
+                            state.gpuQuantity === 1
+                              ? 'bg-green-600 text-white shadow-sm'
+                              : 'bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-700'
+                          )}
+                        >1x</button>
+                        <button
+                          onClick={() => setState((p) => ({ ...p, gpuQuantity: 2 }))}
+                          className={clsx(
+                            'px-3 py-1 text-xs font-medium rounded-lg transition-colors',
+                            state.gpuQuantity === 2
+                              ? 'bg-green-600 text-white shadow-sm'
+                              : 'bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-700'
+                          )}
+                        >2x</button>
+                      </div>
+                    </div>
+                  )}
                   {selectedGPU.oc_single_gpu_score && selectedGPU.base_core_clock_freq && selectedGPU.gpu_max_clock && selectedGPU.gpu_max_clock > selectedGPU.base_core_clock_freq && (
                     <div className="pt-2 border-t border-green-200 space-y-2 mt-1">
                       <div className="flex justify-between items-center">
@@ -773,7 +818,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
                 <div className="flex justify-center">
                   <button
-                    onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, cpuFreq: 0, gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null })}
+                    onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, cpuFreq: 0, gpuQuantity: 1, gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null })}
                     className="px-5 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-sm text-slate-300 hover:text-white transition-colors"
                   >
                     {t('reset')}

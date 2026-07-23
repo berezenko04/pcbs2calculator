@@ -56,6 +56,7 @@ const t: Record<Lang, Translations> = {
     'score_title': 'Your 3DMark Score Estimate',
     'cpu_score': 'CPU Score',
     'gpu_score': 'GPU Score',
+    'gpu_qty': 'GPU Quantity',
     'total_label': 'TOTAL',
     'rank_performance': (r: string) => `${r} Performance`,
     'reset': 'Reset',
