@@ -16,6 +16,12 @@ interface CPU {
   cores: number
   can_overclock: boolean
   frequency: number
+  max_freq?: number
+  multiplier_step?: number
+  voltage?: number
+  max_voltage?: number
+  increase?: number
+  overclock_cpu_score_increase?: number
   series: string
   default_memory_speed: number
   max_memory_channels?: number
@@ -64,7 +70,7 @@ interface CalculatorState {
   selectedGPU: string | null
   selectedRAM: string | null
   ramQuantity: number
-  overclockCPU: boolean
+  cpuFreq: number
   overclockGPU: boolean
   effectiveRamFreq: number | null
 }
@@ -96,13 +102,19 @@ function isLocked(
   return userPercent < Number(componentPercent)
 }
 
-function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, overclock: boolean, effectiveRamFreq?: number): number {
-  const base = Number(overclock && cpu.can_overclock
-    ? (cpu.overclock_basic_cpu_score ?? cpu.basic_cpu_score)
-    : cpu.basic_cpu_score) || 0
+function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number, effectiveRamFreq?: number): number {
+  const freq = Number(cpuFreq && cpuFreq > 0 ? cpuFreq : cpu.frequency) || 0
+  const baseFreq = Number(cpu.frequency) || 0
+  let base = Number(cpu.basic_cpu_score) || 0
+  if (freq > baseFreq && cpu.can_overclock && cpu.max_freq && cpu.overclock_basic_cpu_score) {
+    const maxFreq = Number(cpu.max_freq)
+    if (maxFreq > baseFreq) {
+      const t = Math.min(1, (freq - baseFreq) / (maxFreq - baseFreq))
+      base += (Number(cpu.overclock_basic_cpu_score) - base) * t
+    }
+  }
   if (base === 0) return 0
 
-  const freq = Number(cpu.frequency) || 0
   const ramFreq = Number(effectiveRamFreq ?? Math.min(ram.frequency, cpu.default_memory_speed)) || 0
   const a = Number(cpu.coreclockmultiplier) || 0
   const b = Number(cpu.memchannelsmultiplier) || 0
@@ -116,9 +128,9 @@ function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, overclock: boolean, ef
   const opt = a * freq + b * maxChannels + c * defMem + d
   const cur = a * freq + b * channels + c * ramFreq + d
 
-  if (opt === 0) return base
+  if (opt === 0) return Math.trunc(base)
   const result = Math.trunc(base * cur / opt)
-  return Number.isFinite(result) ? result : base
+  return Number.isFinite(result) ? result : Math.trunc(base)
 }
 
 function calcTotalScore(cpuScore: number, gpuScore: number): number {
@@ -203,7 +215,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
     selectedGPU: null,
     selectedRAM: null,
     ramQuantity: 1,
-    overclockCPU: false,
+    cpuFreq: 0,
     overclockGPU: false,
     effectiveRamFreq: null,
   })
@@ -272,6 +284,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
       return {
         ...prev,
         selectedCPU: cpuId,
+        cpuFreq: cpu?.frequency ?? 0,
         selectedGPU: prev.selectedGPU && availableGPUs.some((g) => g.id === prev.selectedGPU) ? prev.selectedGPU : null,
         selectedRAM: prev.selectedRAM && availableRAMs.some((r) => r.id === prev.selectedRAM) ? prev.selectedRAM : null,
         effectiveRamFreq: null,
@@ -298,7 +311,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
       : selectedGPU.single_gpu_graphics_score
     gpuScore = gpuBase
 
-    cpuScore = calcCpuScore(selectedCPU, selectedRAM, state.ramQuantity, state.overclockCPU, state.effectiveRamFreq ?? undefined)
+    cpuScore = calcCpuScore(selectedCPU, selectedRAM, state.ramQuantity, state.cpuFreq || undefined, state.effectiveRamFreq ?? undefined)
     totalScore = calcTotalScore(cpuScore, gpuScore)
     rank = getRank(totalScore)
   }
@@ -418,7 +431,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   onChange={(id) => setState((p) => {
                     const cpu = cpus.find((c) => c.id === id)
                     const maxCh = cpu?.max_memory_channels ?? 2
-                    return { ...p, selectedCPU: id, ramQuantity: Math.min(p.ramQuantity, maxCh * 2) }
+                    return { ...p, selectedCPU: id, cpuFreq: cpu?.frequency ?? 0, ramQuantity: Math.min(p.ramQuantity, maxCh * 2) }
                   })}
                   placeholder="Select CPU..."
                   getLabel={(cpu) => cpu.part_name}
@@ -429,7 +442,28 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   <div className="flex justify-between"><span className="text-slate-600">Cores:</span><span className="font-semibold">{selectedCPU.cores}</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{selectedCPU.frequency} MHz</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{selectedCPU.series}</span></div>
-                  {selectedCPU.can_overclock && <div className="text-green-600 font-semibold">Overclockable</div>}
+                  {selectedCPU.can_overclock && selectedCPU.max_freq && selectedCPU.max_freq > selectedCPU.frequency && (
+                    <div className="pt-2 border-t border-blue-200 space-y-2 mt-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">CPU Freq:</span>
+                        <span className="font-semibold text-blue-700">{state.cpuFreq || selectedCPU.frequency} MHz</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={selectedCPU.frequency}
+                        max={selectedCPU.max_freq}
+                        step={Math.max(1, Math.round((selectedCPU.max_freq - selectedCPU.frequency) / 20))}
+                        value={state.cpuFreq || selectedCPU.frequency}
+                        onChange={(e) => setState((p) => ({ ...p, cpuFreq: Number(e.target.value) }))}
+                        className="w-full h-1.5 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                      />
+                      <div className="flex justify-between text-xs text-slate-400 mt-0.5">
+                        <span>{selectedCPU.frequency} MHz</span>
+                        <span>{selectedCPU.max_freq} MHz</span>
+                      </div>
+                    </div>
+                  )}
+                  {selectedCPU.can_overclock && <div className="text-green-600 font-semibold text-xs">Overclockable</div>}
                 </div>
               )}
             </div>
@@ -535,10 +569,10 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
                         </div>
                         {isCustom && curVal !== xmpFreq && (
-                          <div className="text-xs text-amber-600 bg-amber-50 p-1.5 rounded mt-1">⚠ XMP disabled: using {curVal} MHz instead of rated {xmpFreq} MHz</div>
+                          <div className="text-xs text-amber-600 bg-amber-50 p-1.5 rounded mt-1">XMP disabled: using {curVal} MHz instead of rated {xmpFreq} MHz</div>
                         )}
                         {!isCustom && xmpFreq > cpuDef && (
-                          <div className="text-xs text-slate-400 bg-white/50 p-1.5 rounded mt-1">ℹ Capped to CPU default ({defFreq} MHz). Enable XMP for {xmpFreq} MHz</div>
+                          <div className="text-xs text-slate-400 bg-white/50 p-1.5 rounded mt-1">Capped to CPU default ({defFreq} MHz). Enable XMP for {xmpFreq} MHz</div>
                         )}
                       </>
                     )
@@ -555,7 +589,6 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {([
-                { label: 'CPU Overclock', desc: 'Increases CPU score', key: 'overclockCPU' as const },
                 { label: 'GPU Overclock', desc: 'Increases GPU score', key: 'overclockGPU' as const },
               ]).map(({ label, desc, key }) => (
                 <div key={key} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
@@ -632,7 +665,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
                 <div className="flex justify-center">
                   <button
-                    onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, overclockCPU: false, overclockGPU: false, effectiveRamFreq: null })}
+                    onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, cpuFreq: 0, overclockGPU: false, effectiveRamFreq: null })}
                     className="px-5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-slate-400 hover:text-white transition-colors"
                   >
                     Reset
