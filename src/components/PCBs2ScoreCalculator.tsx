@@ -178,6 +178,38 @@ function getRank(totalScore: number): ScoreResult['rank'] {
   return 'Budget'
 }
 
+function Slider({ min, max, step, value, onChange, className }: {
+  min?: number
+  max?: number
+  step?: number
+  value: number
+  onChange: (v: number) => void
+  className?: string
+}) {
+  const [local, setLocal] = useState<number | null>(null)
+  const display = local ?? value
+
+  return (
+    <input
+      type="range"
+      min={min}
+      max={max}
+      step={step}
+      value={display}
+      onChange={(e) => {
+        setLocal(Number(e.target.value))
+      }}
+      onPointerUp={() => {
+        if (local !== null) { onChange(local); setLocal(null) }
+      }}
+      onPointerLeave={() => {
+        if (local !== null) { onChange(local); setLocal(null) }
+      }}
+      className={className}
+    />
+  )
+}
+
 function SearchableSelect<T extends { id: string }>({ options, value, onChange, placeholder, getLabel, noResultsText }: {
   options: T[]
   value: string | null
@@ -567,13 +599,12 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                         <span className="text-slate-600 dark:text-gray-400">{t('cpu_frequency')}</span>
                         <span className="font-semibold text-blue-700 dark:text-blue-300">{state.cpuFreq || selectedCPU.frequency} {t('mhz')}</span>
                       </div>
-                      <input
-                        type="range"
+                      <Slider
                         min={selectedCPU.frequency}
                         max={selectedCPU.max_freq}
                         step={Math.max(1, Math.round((selectedCPU.max_freq - selectedCPU.frequency) / 20))}
                         value={state.cpuFreq || selectedCPU.frequency}
-                        onChange={(e) => setState((p) => ({ ...p, cpuFreq: Number(e.target.value) }))}
+                        onChange={(v) => setState((p) => ({ ...p, cpuFreq: v }))}
                         className="w-full h-1.5 bg-blue-200 dark:bg-blue-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
                       />
                       <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-0.5">
@@ -617,13 +648,12 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                         <span className="text-slate-600 dark:text-gray-400">{t('core_clock')}</span>
                         <span className="font-semibold text-green-700 dark:text-green-300">{state.gpuCoreFreq || selectedGPU.base_core_clock_freq} {t('mhz')}</span>
                       </div>
-                      <input
-                        type="range"
+                      <Slider
                         min={selectedGPU.base_core_clock_freq}
                         max={selectedGPU.gpu_max_clock}
                         step={1}
-                        value={state.gpuCoreFreq || selectedGPU.base_core_clock_freq}
-                        onChange={(e) => setState((p) => ({ ...p, gpuCoreFreq: Number(e.target.value) }))}
+                        value={state.gpuCoreFreq || selectedGPU.base_core_clock_freq || 0}
+                        onChange={(v) => setState((p) => ({ ...p, gpuCoreFreq: v }))}
                         className="w-full h-1.5 bg-green-200 dark:bg-green-800 rounded-lg appearance-none cursor-pointer accent-green-600"
                       />
                       <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-0.5">
@@ -634,13 +664,12 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                         <span className="text-slate-600 dark:text-gray-400">{t('mem_clock')}</span>
                         <span className="font-semibold text-green-700 dark:text-green-300">{state.gpuMemFreq || selectedGPU.base_mem_clock_freq} {t('mhz')}</span>
                       </div>
-                      <input
-                        type="range"
+                      <Slider
                         min={selectedGPU.base_mem_clock_freq}
                         max={selectedGPU.gpu_max_mem_clock}
                         step={1}
-                        value={state.gpuMemFreq || selectedGPU.base_mem_clock_freq}
-                        onChange={(e) => setState((p) => ({ ...p, gpuMemFreq: Number(e.target.value) }))}
+                        value={state.gpuMemFreq || selectedGPU.base_mem_clock_freq || 0}
+                        onChange={(v) => setState((p) => ({ ...p, gpuMemFreq: v }))}
                         className="w-full h-1.5 bg-green-200 dark:bg-green-800 rounded-lg appearance-none cursor-pointer accent-green-600"
                       />
                       <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-0.5">
