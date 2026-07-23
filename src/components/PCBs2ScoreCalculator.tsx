@@ -655,7 +655,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                       <>
                         <div className="flex justify-between items-center">
                           <span className="text-slate-600 dark:text-gray-400">Frequency (BIOS):</span>
-                          <div className="flex items-center gap-1">
+                          <div className="relative">
                             <input
                               type="number"
                               min={defFreq}
@@ -666,9 +666,9 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                                 const v = e.target.value ? Math.min(Math.max(Number(e.target.value), defFreq), maxFreq) : defFreq
                                 setFreq(v)
                               }}
-                              className="w-20 p-1 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-24 p-1 pr-9 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
-                            <span className="text-xs text-slate-500 dark:text-gray-400 font-medium">MHz</span>
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">MHz</span>
                           </div>
                         </div>
                         <div className="flex gap-1.5 mt-1.5">
