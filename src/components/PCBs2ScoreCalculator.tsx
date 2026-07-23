@@ -123,7 +123,7 @@ function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, overclock: boolean, ef
 function calcTotalScore(cpuScore: number, gpuScore: number): number {
   if (cpuScore <= 0 || gpuScore <= 0) return 0
   const w = 0.15
-  return Math.round(1 / (w / cpuScore + (1 - w) / gpuScore))
+  return Math.trunc(1 / (w / cpuScore + (1 - w) / gpuScore))
 }
 
 function getRank(totalScore: number): ScoreResult['rank'] {
