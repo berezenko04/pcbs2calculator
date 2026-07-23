@@ -202,9 +202,11 @@ function LevelSettingsModal({ initialLevel, initialPercent, initialSandbox, maxL
   onSave: (level: number, percent: number, sandbox: boolean) => void
 }) {
   const { t } = useLang()
-  const [level, setLevel] = useState(initialLevel)
-  const [percent, setPercent] = useState(initialPercent)
   const [sandbox, setSandbox] = useState(initialSandbox)
+  const levelRef = useRef(initialLevel)
+  const pctRef = useRef(initialPercent)
+  const lvlLabel = useRef<HTMLSpanElement>(null)
+  const pctLabel = useRef<HTMLSpanElement>(null)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -238,50 +240,54 @@ function LevelSettingsModal({ initialLevel, initialPercent, initialSandbox, maxL
             </button>
           </div>
 
-          {!sandbox && (
-            <>
-              <div>
-                <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-                  <span>{t('level')}</span>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{level}</span>
-                </label>
-                <Slider
-                  min={1}
-                  max={maxLevel}
-                  step={1}
-                  value={level}
-                  onChange={setLevel}
-                  className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                />
-                <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
-                  <span>1</span>
-                  <span>{maxLevel}</span>
-                </div>
+          <div className={clsx('space-y-6', sandbox && 'hidden')}>
+            <div>
+              <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+                <span>{t('level')}</span>
+                <span ref={lvlLabel} className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{initialLevel}</span>
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={maxLevel}
+                defaultValue={initialLevel}
+                onChange={(e) => {
+                  levelRef.current = Number(e.target.value)
+                  if (lvlLabel.current) lvlLabel.current.textContent = String(levelRef.current)
+                }}
+                className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              />
+              <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
+                <span>1</span>
+                <span>{maxLevel}</span>
               </div>
+            </div>
 
-              <div>
-                <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-                  <span>{t('progress_through')}</span>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{percent}%</span>
-                </label>
-                <Slider
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={percent}
-                  onChange={setPercent}
-                  className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                />
-                <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
-                  <span>0%</span>
-                  <span>100%</span>
-                </div>
+            <div>
+              <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+                <span>{t('progress_through')}</span>
+                <span ref={pctLabel} className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{initialPercent}%</span>
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                defaultValue={initialPercent}
+                onChange={(e) => {
+                  pctRef.current = Number(e.target.value)
+                  if (pctLabel.current) pctLabel.current.textContent = `${pctRef.current}%`
+                }}
+                className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              />
+              <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
+                <span>0%</span>
+                <span>100%</span>
               </div>
-            </>
-          )}
+            </div>
+          </div>
 
           <button
-            onClick={() => onSave(level, percent, sandbox)}
+            onClick={() => onSave(levelRef.current, pctRef.current, sandbox)}
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors"
           >
             {hasExistingSettings ? t('save') : t('get_started')}
