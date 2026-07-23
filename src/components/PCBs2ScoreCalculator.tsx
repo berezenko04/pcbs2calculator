@@ -245,12 +245,12 @@ function LevelSettingsModal({ initialLevel, initialPercent, initialSandbox, maxL
                   <span>{t('level')}</span>
                   <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{level}</span>
                 </label>
-                <input
-                  type="range"
+                <Slider
                   min={1}
                   max={maxLevel}
+                  step={1}
                   value={level}
-                  onChange={(e) => setLevel(Number(e.target.value))}
+                  onChange={setLevel}
                   className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
                 <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
@@ -264,12 +264,12 @@ function LevelSettingsModal({ initialLevel, initialPercent, initialSandbox, maxL
                   <span>{t('progress_through')}</span>
                   <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{percent}%</span>
                 </label>
-                <input
-                  type="range"
+                <Slider
                   min={0}
                   max={100}
+                  step={1}
                   value={percent}
-                  onChange={(e) => setPercent(Number(e.target.value))}
+                  onChange={setPercent}
                   className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
                 <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
