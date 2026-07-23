@@ -264,12 +264,18 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
   useEffect(() => {
     if (!levelSettings) return
-    setState((prev) => ({
-      ...prev,
-      selectedCPU: prev.selectedCPU && availableCPUs.some((c) => c.id === prev.selectedCPU) ? prev.selectedCPU : null,
-      selectedGPU: prev.selectedGPU && availableGPUs.some((g) => g.id === prev.selectedGPU) ? prev.selectedGPU : null,
-      selectedRAM: prev.selectedRAM && availableRAMs.some((r) => r.id === prev.selectedRAM) ? prev.selectedRAM : null,
-    }))
+    setState((prev) => {
+      const cpuId = prev.selectedCPU && availableCPUs.some((c) => c.id === prev.selectedCPU) ? prev.selectedCPU : null
+      const cpu = cpuId ? cpus.find((c) => c.id === cpuId) : null
+      const maxCh = cpu?.max_memory_channels ?? 2
+      return {
+        ...prev,
+        selectedCPU: cpuId,
+        selectedGPU: prev.selectedGPU && availableGPUs.some((g) => g.id === prev.selectedGPU) ? prev.selectedGPU : null,
+        selectedRAM: prev.selectedRAM && availableRAMs.some((r) => r.id === prev.selectedRAM) ? prev.selectedRAM : null,
+        ramQuantity: Math.min(prev.ramQuantity, maxCh),
+      }
+    })
   }, [levelSettings])
 
   const formatNumber = (num: number): string => new Intl.NumberFormat('en-US').format(num)
@@ -277,6 +283,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
   const selectedCPU = state.selectedCPU ? cpus.find((c) => c.id === state.selectedCPU) : null
   const selectedGPU = state.selectedGPU ? gpus.find((g) => g.id === state.selectedGPU) : null
   const selectedRAM = state.selectedRAM ? rams.find((r) => r.id === state.selectedRAM) : null
+  const maxRamQuantity = selectedCPU?.max_memory_channels ?? 2
 
   let cpuScore = 0
   let gpuScore = 0
@@ -406,7 +413,11 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
               <SearchableSelect
                   options={availableCPUs}
                   value={state.selectedCPU}
-                  onChange={(id) => setState((p) => ({ ...p, selectedCPU: id }))}
+                  onChange={(id) => setState((p) => {
+                    const cpu = cpus.find((c) => c.id === id)
+                    const maxCh = cpu?.max_memory_channels ?? 2
+                    return { ...p, selectedCPU: id, ramQuantity: Math.min(p.ramQuantity, maxCh) }
+                  })}
                   placeholder="Select CPU..."
                   getLabel={(cpu) => cpu.part_name}
                 />
@@ -471,7 +482,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   >−</button>
                   <span className="w-6 text-center font-semibold text-slate-900">{state.ramQuantity || 1}</span>
                   <button
-                    onClick={() => setState((p) => ({ ...p, ramQuantity: Math.min(8, (p.ramQuantity || 1) + 1) }))}
+                    onClick={() => setState((p) => ({ ...p, ramQuantity: Math.min(maxRamQuantity, (p.ramQuantity || 1) + 1) }))}
                     className="w-8 h-8 rounded-lg border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors"
                   >+</button>
                 </div>
