@@ -273,7 +273,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
         selectedCPU: cpuId,
         selectedGPU: prev.selectedGPU && availableGPUs.some((g) => g.id === prev.selectedGPU) ? prev.selectedGPU : null,
         selectedRAM: prev.selectedRAM && availableRAMs.some((r) => r.id === prev.selectedRAM) ? prev.selectedRAM : null,
-        ramQuantity: Math.min(prev.ramQuantity, maxCh),
+        ramQuantity: Math.min(prev.ramQuantity, maxCh * 2),
       }
     })
   }, [levelSettings])
@@ -283,7 +283,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
   const selectedCPU = state.selectedCPU ? cpus.find((c) => c.id === state.selectedCPU) : null
   const selectedGPU = state.selectedGPU ? gpus.find((g) => g.id === state.selectedGPU) : null
   const selectedRAM = state.selectedRAM ? rams.find((r) => r.id === state.selectedRAM) : null
-  const maxRamQuantity = selectedCPU?.max_memory_channels ?? 2
+  const maxRamQuantity = (selectedCPU?.max_memory_channels ?? 2) * 2
 
   let cpuScore = 0
   let gpuScore = 0
@@ -416,7 +416,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   onChange={(id) => setState((p) => {
                     const cpu = cpus.find((c) => c.id === id)
                     const maxCh = cpu?.max_memory_channels ?? 2
-                    return { ...p, selectedCPU: id, ramQuantity: Math.min(p.ramQuantity, maxCh) }
+                    return { ...p, selectedCPU: id, ramQuantity: Math.min(p.ramQuantity, maxCh * 2) }
                   })}
                   placeholder="Select CPU..."
                   getLabel={(cpu) => cpu.part_name}
