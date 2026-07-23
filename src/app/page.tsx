@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { LangProvider } from '@/lib/i18n/context'
+import AppShell, { type TabId } from '@/components/AppShell'
 import PCBs2ScoreCalculator from '@/components/PCBs2ScoreCalculator'
+import BuildMaker from '@/components/BuildMaker'
 import { useLang } from '@/lib/i18n/context'
 
 function LoadingFallback() {
@@ -19,6 +21,7 @@ function HomeInner() {
   const [gpus, setGpus] = useState<any[]>([])
   const [rams, setRams] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<TabId>('calculator')
 
   useEffect(() => {
     Promise.all([
@@ -35,7 +38,12 @@ function HomeInner() {
 
   if (loading) return <LoadingFallback />
 
-  return <PCBs2ScoreCalculator cpus={cpus} gpus={gpus} rams={rams} />
+  return (
+    <AppShell activeTab={activeTab} onTabChange={setActiveTab}>
+      {activeTab === 'calculator' && <PCBs2ScoreCalculator cpus={cpus} gpus={gpus} rams={rams} />}
+      {activeTab === 'buildmaker' && <BuildMaker />}
+    </AppShell>
+  )
 }
 
 export default function HomePage() {

@@ -70,6 +70,10 @@ const t: Record<Lang, Translations> = {
     'average': 'Average',
     'budget': 'Budget',
     'error': 'Error',
+    'tab_calculator': '3DMark Calculator',
+    'tab_build_maker': 'Build Maker',
+    'build_maker': 'Build Maker',
+    'build_maker_soon': 'Build configuration tool coming soon!',
   },
   ru: {
     'loading': 'Загрузка компонентов...',
@@ -127,6 +131,10 @@ const t: Record<Lang, Translations> = {
     'average': 'Средний',
     'budget': 'Бюджетный',
     'error': 'Ошибка',
+    'tab_calculator': '3DMark Калькулятор',
+    'tab_build_maker': 'Сборщик',
+    'build_maker': 'Сборщик',
+    'build_maker_soon': 'Инструмент сборки конфигурации скоро появится!',
   },
   uk: {
     'loading': 'Завантаження компонентів...',
@@ -184,6 +192,10 @@ const t: Record<Lang, Translations> = {
     'average': 'Середній',
     'budget': 'Бюджетний',
     'error': 'Помилка',
+    'tab_calculator': '3DMark Калькулятор',
+    'tab_build_maker': 'Конструктор',
+    'build_maker': 'Конструктор',
+    'build_maker_soon': 'Інструмент збірки конфігурації скоро з\'явиться!',
   },
   ko: {
     'loading': '구성 요소 로딩 중...',
@@ -241,6 +253,10 @@ const t: Record<Lang, Translations> = {
     'average': '평균',
     'budget': '예산',
     'error': '오류',
+    'tab_calculator': '3DMark 계산기',
+    'tab_build_maker': '빌드 메이커',
+    'build_maker': '빌드 메이커',
+    'build_maker_soon': '빌드 구성 도구가 곧 출시됩니다!',
   },
   zh: {
     'loading': '正在加载组件...',
@@ -298,6 +314,10 @@ const t: Record<Lang, Translations> = {
     'average': '平均',
     'budget': '经济',
     'error': '错误',
+    'tab_calculator': '3DMark 计算器',
+    'tab_build_maker': '配置构建',
+    'build_maker': '配置构建',
+    'build_maker_soon': '配置构建工具即将推出！',
   },
   de: {
     'loading': 'Komponenten werden geladen...',
@@ -355,6 +375,10 @@ const t: Record<Lang, Translations> = {
     'average': 'Durchschnittlich',
     'budget': 'Budget',
     'error': 'Fehler',
+    'tab_calculator': '3DMark Rechner',
+    'tab_build_maker': 'Build Maker',
+    'build_maker': 'Build Maker',
+    'build_maker_soon': 'Baukonfigurationswerkzeug kommt bald!',
   },
   es: {
     'loading': 'Cargando componentes...',
@@ -412,6 +436,10 @@ const t: Record<Lang, Translations> = {
     'average': 'Promedio',
     'budget': 'Económico',
     'error': 'Error',
+    'tab_calculator': '3DMark Calculadora',
+    'tab_build_maker': 'Creador de Builds',
+    'build_maker': 'Creador de Builds',
+    'build_maker_soon': '¡Herramienta de construcción de configuraciones próximamente!',
   },
   it: {
     'loading': 'Caricamento componenti...',
@@ -469,6 +497,10 @@ const t: Record<Lang, Translations> = {
     'average': 'Medio',
     'budget': 'Economico',
     'error': 'Errore',
+    'tab_calculator': '3DMark Calcolatrice',
+    'tab_build_maker': 'Creatore di Build',
+    'build_maker': 'Creatore di Build',
+    'build_maker_soon': 'Prossimamente strumento di configurazione build!',
   },
 }
 
