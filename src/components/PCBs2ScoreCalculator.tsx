@@ -116,7 +116,7 @@ function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, overclock: boolean, ef
   const cur = a * freq + b * channels + c * ramFreq + d
 
   if (opt === 0) return base
-  const result = Math.round(base * cur / opt)
+  const result = Math.trunc(base * cur / opt)
   return Number.isFinite(result) ? result : base
 }
 
