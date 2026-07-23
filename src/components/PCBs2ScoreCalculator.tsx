@@ -514,12 +514,11 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
               {selectedCPU && (
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
                   <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Cores:</span><span className="font-semibold">{selectedCPU.cores}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Freq:</span><span className="font-semibold">{selectedCPU.frequency} MHz</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Series:</span><span className="font-semibold">{selectedCPU.series}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Frequency:</span><span className="font-semibold">{selectedCPU.frequency} MHz</span></div>
                   {selectedCPU.can_overclock && selectedCPU.max_freq && selectedCPU.max_freq > selectedCPU.frequency && (
                     <div className="pt-2 border-t border-blue-200 space-y-2 mt-1">
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600 dark:text-gray-400">CPU Freq:</span>
+                        <span className="text-slate-600 dark:text-gray-400">CPU Frequency:</span>
                         <span className="font-semibold text-blue-700 dark:text-blue-300">{state.cpuFreq || selectedCPU.frequency} MHz</span>
                       </div>
                       <input
@@ -565,7 +564,6 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 <div className="p-4 bg-green-50 dark:bg-green-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
                   <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">VRAM:</span><span className="font-semibold">{selectedGPU.vram_gb} GB</span></div>
                   <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">TDP:</span><span className="font-semibold">{selectedGPU.wattage} W</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Series:</span><span className="font-semibold">{selectedGPU.chipset_series}</span></div>
                   {selectedGPU.oc_single_gpu_score && selectedGPU.base_core_clock_freq && selectedGPU.gpu_max_clock && selectedGPU.gpu_max_clock > selectedGPU.base_core_clock_freq && (
                     <div className="pt-2 border-t border-green-200 space-y-2 mt-1">
                       <div className="flex justify-between items-center">
@@ -642,7 +640,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
               {selectedRAM && (
                 <div className="p-4 bg-purple-50 dark:bg-purple-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
                   <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Total:</span><span className="font-semibold">{selectedRAM.total_size_gb * state.ramQuantity} GB ({state.ramQuantity}×{selectedRAM.total_size_gb}GB)</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Freq (rated):</span><span className="font-semibold">{selectedRAM.frequency} MHz</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">Frequency (rated):</span><span className="font-semibold">{selectedRAM.frequency} MHz</span></div>
                   {(() => {
                     const cpuDef = selectedCPU?.default_memory_speed ?? selectedRAM.frequency
                     const defFreq = Math.min(selectedRAM.frequency, cpuDef)
@@ -656,19 +654,22 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                     return (
                       <>
                         <div className="flex justify-between items-center">
-                          <span className="text-slate-600 dark:text-gray-400">Freq (BIOS):</span>
-                          <input
-                            type="number"
-                            min={defFreq}
-                            max={maxFreq}
-                            step={100}
-                            value={curVal}
-                            onChange={(e) => {
-                              const v = e.target.value ? Math.min(Math.max(Number(e.target.value), defFreq), maxFreq) : defFreq
-                              setFreq(v)
-                            }}
-                            className="w-24 p-1 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
+                          <span className="text-slate-600 dark:text-gray-400">Frequency (BIOS):</span>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min={defFreq}
+                              max={maxFreq}
+                              step={100}
+                              value={curVal}
+                              onChange={(e) => {
+                                const v = e.target.value ? Math.min(Math.max(Number(e.target.value), defFreq), maxFreq) : defFreq
+                                setFreq(v)
+                              }}
+                              className="w-20 p-1 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <span className="text-xs text-slate-500 dark:text-gray-400 font-medium">MHz</span>
+                          </div>
                         </div>
                         <div className="flex gap-1.5 mt-1.5">
                           <button
