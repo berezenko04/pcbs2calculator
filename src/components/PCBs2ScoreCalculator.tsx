@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import clsx from 'clsx'
-import { Calculator, Cpu, Monitor, MemoryStick, TrendingUp, Settings, X, ChevronDown } from 'lucide-react'
+import { Calculator, Cpu, Gpu, MemoryStick, TrendingUp, Settings, X, ChevronDown } from 'lucide-react'
 
 interface CPU {
   id: string
@@ -435,7 +435,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
             <div className="bg-white rounded-xl shadow-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <Monitor className="h-6 w-6 text-green-600 mr-2" />
+                  <Gpu className="h-6 w-6 text-green-600 mr-2" />
                   <h2 className="text-xl font-semibold text-slate-900">GPU</h2>
                 </div>
                 <span className="text-xs text-slate-400">{availableGPUs.length}/{gpus.length}</span>
@@ -493,7 +493,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   <div className="flex justify-between"><span className="text-slate-600">Total:</span><span className="font-semibold">{selectedRAM.total_size_gb * state.ramQuantity} GB ({state.ramQuantity}×{selectedRAM.total_size_gb}GB)</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">Freq (rated):</span><span className="font-semibold">{selectedRAM.frequency} MHz</span></div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-600">Freq (effective):</span>
+                    <span className="text-slate-600">Freq (BIOS):</span>
                     <input
                       type="number"
                       min={800}
@@ -566,7 +566,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   </div>
                   <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
                     <div className="bg-green-500/20 p-2.5 rounded-lg">
-                      <Monitor className="h-5 w-5 text-green-400" />
+                      <Gpu className="h-5 w-5 text-green-400" />
                     </div>
                     <div>
                       <div className="text-xs text-slate-400 uppercase tracking-wider">GPU Score</div>
