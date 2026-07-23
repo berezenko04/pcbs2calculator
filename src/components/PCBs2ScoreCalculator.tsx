@@ -171,11 +171,11 @@ function SearchableSelect<T extends { id: string }>({ options, value, onChange, 
         onChange={(e) => { setSearch(e.target.value); setIsOpen(true) }}
         onFocus={() => { setIsOpen(true); setSearch('') }}
         placeholder={placeholder}
-        className="w-full p-3 pr-10 border border-slate-300 rounded-lg cursor-pointer bg-white"
+        className="w-full p-3 pr-10 border border-slate-300 rounded-lg cursor-pointer bg-white truncate"
       />
       <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
       {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-10 min-w-full w-max mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {filtered.length === 0 ? (
             <div className="p-3 text-slate-400 text-sm">No results</div>
           ) : (
@@ -183,7 +183,7 @@ function SearchableSelect<T extends { id: string }>({ options, value, onChange, 
               <button
                 key={item.id}
                 type="button"
-                className={clsx('w-full text-left p-3 text-sm hover:bg-blue-50 transition-colors', item.id === value && 'bg-blue-100 font-semibold')}
+                className={clsx('w-full text-left p-3 text-sm hover:bg-blue-50 transition-colors whitespace-nowrap', item.id === value && 'bg-blue-100 font-semibold')}
                 onClick={() => { onChange(item.id); setIsOpen(false); setSearch('') }}
               >
                 {getLabel(item)}
@@ -490,7 +490,6 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
               {selectedRAM && (
                 <div className="p-4 bg-purple-50 rounded-lg space-y-2 text-sm">
-                  <div className="font-semibold text-purple-800 mb-1">{selectedRAM.manufacturer} {selectedRAM.part_name}</div>
                   <div className="flex justify-between"><span className="text-slate-600">Total:</span><span className="font-semibold">{selectedRAM.total_size_gb * state.ramQuantity} GB ({state.ramQuantity}×{selectedRAM.total_size_gb}GB)</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">Freq (rated):</span><span className="font-semibold">{selectedRAM.frequency} MHz</span></div>
                   <div className="flex justify-between items-center">
