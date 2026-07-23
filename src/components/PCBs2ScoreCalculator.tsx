@@ -531,13 +531,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                             onClick={() => setFreq(xmpFreq)}
                             className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', isCustom && curVal === xmpFreq ? 'bg-purple-200 text-purple-800' : 'bg-white/60 text-slate-500 hover:bg-white')}
                           >XMP</button>
-                          {maxFreq > xmpFreq && (
-                            <button
-                              type="button"
-                              onClick={() => setFreq(maxFreq)}
-                              className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', isCustom && curVal === maxFreq ? 'bg-purple-200 text-purple-800' : 'bg-white/60 text-slate-500 hover:bg-white')}
-                            >Max</button>
-                          )}
+
                         </div>
                         {isCustom && curVal !== xmpFreq && (
                           <div className="text-xs text-amber-600 bg-amber-50 p-1.5 rounded mt-1">⚠ XMP disabled: using {curVal} MHz instead of rated {xmpFreq} MHz</div>
