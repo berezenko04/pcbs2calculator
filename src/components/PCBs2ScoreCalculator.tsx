@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 import { Calculator, Cpu, Monitor, MemoryStick, TrendingUp, Settings, X, ChevronDown } from 'lucide-react'
 
@@ -18,6 +18,7 @@ interface CPU {
   frequency: number
   series: string
   default_memory_speed: number
+  max_memory_channels?: number
   coreclockmultiplier?: number
   memchannelsmultiplier?: number
   memclockmultiplier?: number
@@ -64,6 +65,7 @@ interface CalculatorState {
   ramQuantity: number
   overclockCPU: boolean
   overclockGPU: boolean
+  effectiveRamFreq: number | null
 }
 
 interface LevelSettings {
@@ -93,23 +95,25 @@ function isLocked(
   return userPercent < Number(componentPercent)
 }
 
-function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, overclock: boolean): number {
+function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, overclock: boolean, effectiveRamFreq?: number): number {
   const base = Number(overclock && cpu.can_overclock
     ? (cpu.overclock_basic_cpu_score ?? cpu.basic_cpu_score)
     : cpu.basic_cpu_score) || 0
   if (base === 0) return 0
 
   const freq = Number(cpu.frequency) || 0
-  const ramFreq = Number(ram.frequency) || 0
+  const ramFreq = Number(effectiveRamFreq ?? ram.frequency) || 0
   const a = Number(cpu.coreclockmultiplier) || 0
   const b = Number(cpu.memchannelsmultiplier) || 0
   const c = Number(cpu.memclockmultiplier) || 0
   const d = Number(cpu.finaladjustment) || 0
   const defMem = Number(cpu.default_memory_speed) || 2666
   const sticks = Math.max(1, ramQty)
+  const maxChannels = Number(cpu.max_memory_channels) || 2
+  const channels = Math.min(sticks, maxChannels)
 
-  const opt = a * freq + b * 2 + c * defMem + d
-  const cur = a * freq + b * sticks + c * ramFreq + d
+  const opt = a * freq + b * maxChannels + c * defMem + d
+  const cur = a * freq + b * channels + c * ramFreq + d
 
   if (opt === 0) return base
   const result = Math.round(base * cur / opt)
@@ -130,6 +134,68 @@ function getRank(totalScore: number): ScoreResult['rank'] {
   return 'Budget'
 }
 
+function SearchableSelect<T extends { id: string }>({ options, value, onChange, placeholder, getLabel }: {
+  options: T[]
+  value: string | null
+  onChange: (id: string) => void
+  placeholder: string
+  getLabel: (item: T) => string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const selected = value ? options.find((o) => o.id === value) : null
+
+  const filtered = search
+    ? options.filter((o) => getLabel(o).toLowerCase().includes(search.toLowerCase()))
+    : options
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div ref={containerRef} className="relative mb-4">
+      <input
+        ref={inputRef}
+        type="text"
+        value={isOpen ? search : (selected ? getLabel(selected) : '')}
+        onChange={(e) => { setSearch(e.target.value); setIsOpen(true) }}
+        onFocus={() => { setIsOpen(true); setSearch('') }}
+        placeholder={placeholder}
+        className="w-full p-3 pr-10 border border-slate-300 rounded-lg cursor-pointer bg-white"
+      />
+      <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <div className="p-3 text-slate-400 text-sm">No results</div>
+          ) : (
+            filtered.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={clsx('w-full text-left p-3 text-sm hover:bg-blue-50 transition-colors', item.id === value && 'bg-blue-100 font-semibold')}
+                onClick={() => { onChange(item.id); setIsOpen(false); setSearch('') }}
+              >
+                {getLabel(item)}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
   const [state, setState] = useState<CalculatorState>({
     selectedCPU: null,
@@ -138,6 +204,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
     ramQuantity: 1,
     overclockCPU: false,
     overclockGPU: false,
+    effectiveRamFreq: null,
   })
 
   const [levelSettings, setLevelSettings] = useState<LevelSettings | null>(null)
@@ -146,11 +213,13 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
   const [draftLevel, setDraftLevel] = useState(1)
   const [draftPercent, setDraftPercent] = useState(0)
 
-  const maxLevel = Math.max(
+  const allLevels = [
     ...cpus.map((c) => c.level),
     ...gpus.map((g) => g.level),
     ...rams.map((r) => r.level),
-  )
+  ].filter((l): l is number => typeof l === 'number' && Number.isFinite(l))
+
+  const maxLevel = allLevels.length > 0 ? Math.max(...allLevels) : 30
 
   useEffect(() => {
     try {
@@ -220,7 +289,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
       : selectedGPU.single_gpu_graphics_score
     gpuScore = gpuBase
 
-    cpuScore = calcCpuScore(selectedCPU, selectedRAM, state.ramQuantity, state.overclockCPU)
+    cpuScore = calcCpuScore(selectedCPU, selectedRAM, state.ramQuantity, state.overclockCPU, state.effectiveRamFreq ?? undefined)
     totalScore = calcTotalScore(cpuScore, gpuScore)
     rank = getRank(totalScore)
   }
@@ -334,25 +403,16 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 </div>
                 <span className="text-xs text-slate-400">{availableCPUs.length}/{cpus.length}</span>
               </div>
-              <div className="relative">
-                <select
-                  value={state.selectedCPU || ''}
-                  onChange={(e) => setState((p) => ({ ...p, selectedCPU: e.target.value }))}
-                  className="w-full p-3 pr-10 border border-slate-300 rounded-lg mb-4 appearance-none cursor-pointer bg-white"
-                >
-                  <option value="">Select CPU...</option>
-                  {availableCPUs.map((cpu) => (
-                    <option key={cpu.id} value={cpu.id}>
-                      {cpu.part_name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
-              </div>
+              <SearchableSelect
+                  options={availableCPUs}
+                  value={state.selectedCPU}
+                  onChange={(id) => setState((p) => ({ ...p, selectedCPU: id }))}
+                  placeholder="Select CPU..."
+                  getLabel={(cpu) => cpu.part_name}
+                />
 
               {selectedCPU && (
                 <div className="p-4 bg-blue-50 rounded-lg space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-slate-600">Score:</span><span className="font-semibold">{formatNumber(selectedCPU.basic_cpu_score)}</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">Cores:</span><span className="font-semibold">{selectedCPU.cores}</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{selectedCPU.frequency} MHz</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{selectedCPU.series}</span></div>
@@ -369,25 +429,16 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 </div>
                 <span className="text-xs text-slate-400">{availableGPUs.length}/{gpus.length}</span>
               </div>
-              <div className="relative">
-                <select
-                  value={state.selectedGPU || ''}
-                  onChange={(e) => setState((p) => ({ ...p, selectedGPU: e.target.value }))}
-                  className="w-full p-3 pr-10 border border-slate-300 rounded-lg mb-4 appearance-none cursor-pointer bg-white"
-                >
-                  <option value="">Select GPU...</option>
-                  {availableGPUs.map((gpu) => (
-                    <option key={gpu.id} value={gpu.id}>
-                      {gpu.manufacturer} {gpu.part_name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
-              </div>
+              <SearchableSelect
+                  options={availableGPUs}
+                  value={state.selectedGPU}
+                  onChange={(id) => setState((p) => ({ ...p, selectedGPU: id }))}
+                  placeholder="Select GPU..."
+                  getLabel={(gpu) => `${gpu.manufacturer} ${gpu.part_name}`}
+                />
 
               {selectedGPU && (
                 <div className="p-4 bg-green-50 rounded-lg space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-slate-600">Score:</span><span className="font-semibold">{formatNumber(selectedGPU.single_gpu_graphics_score)}</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">VRAM:</span><span className="font-semibold">{selectedGPU.vram_gb} GB</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">TDP:</span><span className="font-semibold">{selectedGPU.wattage} W</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{selectedGPU.chipset_series}</span></div>
@@ -403,21 +454,13 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 </div>
                 <span className="text-xs text-slate-400">{availableRAMs.length}/{rams.length}</span>
               </div>
-              <div className="relative">
-                <select
-                  value={state.selectedRAM || ''}
-                  onChange={(e) => setState((p) => ({ ...p, selectedRAM: e.target.value }))}
-                  className="w-full p-3 pr-10 border border-slate-300 rounded-lg mb-4 appearance-none cursor-pointer bg-white"
-                >
-                  <option value="">Select RAM...</option>
-                  {availableRAMs.map((ram) => (
-                    <option key={ram.id} value={ram.id}>
-                      {ram.manufacturer} {ram.part_name} {ram.total_size_gb}GB {ram.frequency}MHz
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
-              </div>
+              <SearchableSelect
+                  options={availableRAMs}
+                  value={state.selectedRAM}
+                  onChange={(id) => setState((p) => ({ ...p, selectedRAM: id }))}
+                  placeholder="Select RAM..."
+                  getLabel={(ram) => `${ram.manufacturer} ${ram.part_name} ${ram.total_size_gb}GB ${ram.frequency}MHz`}
+                />
 
               {selectedRAM && (
                 <div className="flex items-center gap-3 mb-3">
@@ -438,7 +481,27 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 <div className="p-4 bg-purple-50 rounded-lg space-y-2 text-sm">
                   <div className="font-semibold text-purple-800 mb-1">{selectedRAM.manufacturer} {selectedRAM.part_name}</div>
                   <div className="flex justify-between"><span className="text-slate-600">Total:</span><span className="font-semibold">{selectedRAM.total_size_gb * state.ramQuantity} GB ({state.ramQuantity}×{selectedRAM.total_size_gb}GB)</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600">Freq:</span><span className="font-semibold">{selectedRAM.frequency} MHz</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Freq (rated):</span><span className="font-semibold">{selectedRAM.frequency} MHz</span></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">Freq (effective):</span>
+                    <input
+                      type="number"
+                      min={800}
+                      max={6000}
+                      step={100}
+                      value={state.effectiveRamFreq ?? selectedRAM.frequency}
+                      onChange={(e) => {
+                        const v = e.target.value ? Number(e.target.value) : null
+                        setState((p) => ({ ...p, effectiveRamFreq: v }))
+                      }}
+                      className="w-24 p-1 text-right border border-purple-300 rounded bg-white text-slate-900 font-semibold text-sm"
+                    />
+                  </div>
+                  {state.effectiveRamFreq !== null && state.effectiveRamFreq !== selectedRAM.frequency && (
+                    <div className="text-xs text-amber-600 bg-amber-50 p-1.5 rounded mt-1">
+                      ⚠ XMP disabled: using effective freq ({state.effectiveRamFreq} MHz) instead of rated ({selectedRAM.frequency} MHz)
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -522,7 +585,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
                 <div className="flex justify-center">
                   <button
-                    onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, overclockCPU: false, overclockGPU: false })}
+                    onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, overclockCPU: false, overclockGPU: false, effectiveRamFreq: null })}
                     className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition-colors"
                   >
                     Reset
