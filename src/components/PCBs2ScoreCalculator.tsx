@@ -227,10 +227,10 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
   const [draftPercent, setDraftPercent] = useState(0)
 
   const allLevels = [
-    ...cpus.map((c) => c.level),
-    ...gpus.map((g) => g.level),
-    ...rams.map((r) => r.level),
-  ].filter((l): l is number => typeof l === 'number' && Number.isFinite(l))
+    ...cpus.map((c) => Number(c.level)),
+    ...gpus.map((g) => Number(g.level)),
+    ...rams.map((r) => Number(r.level)),
+  ].filter((l) => !isNaN(l))
 
   const maxLevel = allLevels.length > 0 ? Math.max(...allLevels) : 30
 
