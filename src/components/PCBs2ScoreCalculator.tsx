@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import clsx from 'clsx'
 import { Calculator, Cpu, Gpu, MemoryStick, TrendingUp, Settings, X, ChevronDown, Moon, Sun, Star } from 'lucide-react'
 
@@ -249,12 +249,44 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
     effectiveRamFreq: null,
   })
 
-  const [levelSettings, setLevelSettings] = useState<LevelSettings | null>(null)
-  const [settingsReady, setSettingsReady] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
-  const [draftLevel, setDraftLevel] = useState(1)
-  const [draftPercent, setDraftPercent] = useState(0)
-  const [darkMode, setDarkMode] = useState(false)
+  const initData = useMemo(() => {
+    const init: {
+      levelSettings: LevelSettings | null
+      showSettings: boolean
+      draftLevel: number
+      draftPercent: number
+    } = { levelSettings: null, showSettings: false, draftLevel: 1, draftPercent: 0 }
+    try {
+      const raw = localStorage.getItem('pcbs2_level')
+      if (raw) {
+        const parsed = JSON.parse(raw) as LevelSettings
+        if (typeof parsed.level === 'number' && typeof parsed.percent === 'number') {
+          init.levelSettings = parsed
+          init.draftLevel = parsed.level
+          init.draftPercent = parsed.percent
+          return init
+        }
+      }
+    } catch {}
+    init.showSettings = true
+    return init
+  }, [])
+
+  const [levelSettings, setLevelSettings] = useState<LevelSettings | null>(initData.levelSettings)
+  const [settingsReady, setSettingsReady] = useState(true)
+  const [showSettings, setShowSettings] = useState(initData.showSettings)
+  const [draftLevel, setDraftLevel] = useState(initData.draftLevel)
+  const [draftPercent, setDraftPercent] = useState(initData.draftPercent)
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('pcbs2_dark')
+      if (stored === 'true') {
+        document.documentElement.classList.add('dark')
+        return true
+      }
+    }
+    return false
+  })
   const [starCount, setStarCount] = useState<number | null>(null)
 
   useEffect(() => {
@@ -262,13 +294,6 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
       .then(r => r.json())
       .then(d => setStarCount(d.stargazers_count))
       .catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    const stored = localStorage.getItem('pcbs2_dark')
-    const isDark = stored === 'true'
-    setDarkMode(isDark)
-    document.documentElement.classList.toggle('dark', isDark)
   }, [])
 
   useEffect(() => {
@@ -283,24 +308,6 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
   ].filter((l) => !isNaN(l))
 
   const maxLevel = allLevels.length > 0 ? Math.max(...allLevels) : 30
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('pcbs2_level')
-      if (raw) {
-        const parsed = JSON.parse(raw) as LevelSettings
-        if (typeof parsed.level === 'number' && typeof parsed.percent === 'number') {
-          setLevelSettings(parsed)
-          setDraftLevel(parsed.level)
-          setDraftPercent(parsed.percent)
-          setSettingsReady(true)
-          return
-        }
-      }
-    } catch {}
-    setShowSettings(true)
-    setSettingsReady(true)
-  }, [])
 
   const saveSettings = useCallback((lvl: number, pct: number) => {
     const s: LevelSettings = { level: lvl, percent: pct }
@@ -325,13 +332,14 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
     ? rams.filter((r) => !isLocked(r.level, r.percent_through, levelSettings.level, levelSettings.percent))
     : rams
 
+  const levelSettingsKey = levelSettings ? `${levelSettings.level}-${levelSettings.percent}` : null
   useEffect(() => {
     if (!levelSettings) return
-    setState((prev) => {
-      const cpuId = prev.selectedCPU && availableCPUs.some((c) => c.id === prev.selectedCPU) ? prev.selectedCPU : null
-      const cpu = cpuId ? cpus.find((c) => c.id === cpuId) : null
-      const maxCh = cpu?.max_memory_channels ?? 2
-      return {
+    const cpuId = state.selectedCPU && availableCPUs.some((c) => c.id === state.selectedCPU) ? state.selectedCPU : null
+    const cpu = cpuId ? cpus.find((c) => c.id === cpuId) : null
+    const maxCh = cpu?.max_memory_channels ?? 2
+    if (state.selectedCPU !== cpuId || state.selectedGPU !== (state.selectedGPU && availableGPUs.some((g) => g.id === state.selectedGPU) ? state.selectedGPU : null) || state.selectedRAM !== (state.selectedRAM && availableRAMs.some((r) => r.id === state.selectedRAM) ? state.selectedRAM : null)) {
+      setState((prev) => ({
         ...prev,
         selectedCPU: cpuId,
         cpuFreq: cpu?.frequency ?? 0,
@@ -339,9 +347,10 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
         selectedRAM: prev.selectedRAM && availableRAMs.some((r) => r.id === prev.selectedRAM) ? prev.selectedRAM : null,
         effectiveRamFreq: null,
         ramQuantity: Math.min(prev.ramQuantity, maxCh * 2),
-      }
-    })
-  }, [levelSettings])
+      }))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [levelSettingsKey])
 
   const formatNumber = (num: number): string => new Intl.NumberFormat('en-US').format(num)
 
