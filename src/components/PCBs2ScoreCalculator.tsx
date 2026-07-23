@@ -274,6 +274,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
         selectedCPU: cpuId,
         selectedGPU: prev.selectedGPU && availableGPUs.some((g) => g.id === prev.selectedGPU) ? prev.selectedGPU : null,
         selectedRAM: prev.selectedRAM && availableRAMs.some((r) => r.id === prev.selectedRAM) ? prev.selectedRAM : null,
+        effectiveRamFreq: null,
         ramQuantity: Math.min(prev.ramQuantity, maxCh * 2),
       }
     })
@@ -469,7 +470,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
               <SearchableSelect
                   options={availableRAMs}
                   value={state.selectedRAM}
-                  onChange={(id) => setState((p) => ({ ...p, selectedRAM: id }))}
+                  onChange={(id) => setState((p) => ({ ...p, selectedRAM: id, effectiveRamFreq: null }))}
                   placeholder="Select RAM..."
                   getLabel={(ram) => `${ram.manufacturer} ${ram.part_name} ${ram.total_size_gb}GB ${ram.frequency}MHz`}
                 />
