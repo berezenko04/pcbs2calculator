@@ -50,6 +50,7 @@ interface RAM {
   total_size_gb: number
   frequency: number
   voltage: number
+  max_speed?: number
 }
 
 interface Props {
@@ -492,30 +493,60 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                 <div className="p-4 bg-purple-50 rounded-lg space-y-2 text-sm">
                   <div className="flex justify-between"><span className="text-slate-600">Total:</span><span className="font-semibold">{selectedRAM.total_size_gb * state.ramQuantity} GB ({state.ramQuantity}×{selectedRAM.total_size_gb}GB)</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">Freq (rated):</span><span className="font-semibold">{selectedRAM.frequency} MHz</span></div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600">Freq (BIOS):</span>
-                    <input
-                      type="number"
-                      min={800}
-                      max={6000}
-                      step={100}
-                      value={state.effectiveRamFreq ?? Math.min(selectedRAM.frequency, selectedCPU?.default_memory_speed ?? selectedRAM.frequency)}
-                      onChange={(e) => {
-                        const v = e.target.value ? Number(e.target.value) : null
-                        setState((p) => ({ ...p, effectiveRamFreq: v }))
-                      }}
-                      className="w-24 p-1 text-right border border-purple-300 rounded bg-white text-slate-900 font-semibold text-sm"
-                    />
-                  </div>
                   {(() => {
-                    const defaultFreq = Math.min(selectedRAM.frequency, selectedCPU?.default_memory_speed ?? selectedRAM.frequency)
-                    if (state.effectiveRamFreq !== null && state.effectiveRamFreq !== selectedRAM.frequency) {
-                      return <div className="text-xs text-amber-600 bg-amber-50 p-1.5 rounded mt-1">⚠ XMP disabled: using effective freq ({state.effectiveRamFreq} MHz) instead of rated ({selectedRAM.frequency} MHz)</div>
-                    }
-                    if (state.effectiveRamFreq === null && selectedRAM.frequency > (selectedCPU?.default_memory_speed ?? selectedRAM.frequency)) {
-                      return <div className="text-xs text-slate-400 bg-white/50 p-1.5 rounded mt-1">ℹ Capped to CPU default memory speed ({defaultFreq} MHz). Enable XMP or set Freq (BIOS) manually for rated speed.</div>
-                    }
-                    return null
+                    const cpuDef = selectedCPU?.default_memory_speed ?? selectedRAM.frequency
+                    const defFreq = Math.min(selectedRAM.frequency, cpuDef)
+                    const xmpFreq = selectedRAM.frequency
+                    const maxFreq = selectedRAM.max_speed ?? xmpFreq
+                    const curVal = state.effectiveRamFreq ?? defFreq
+                    const isCustom = state.effectiveRamFreq !== null
+
+                    const setFreq = (freq: number | null) => setState((p) => ({ ...p, effectiveRamFreq: freq }))
+
+                    return (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-600">Freq (BIOS):</span>
+                          <input
+                            type="number"
+                            min={defFreq}
+                            max={maxFreq}
+                            step={100}
+                            value={curVal}
+                            onChange={(e) => {
+                              const v = e.target.value ? Math.min(Math.max(Number(e.target.value), defFreq), maxFreq) : defFreq
+                              setFreq(v)
+                            }}
+                            className="w-24 p-1 text-right border border-purple-300 rounded bg-white text-slate-900 font-semibold text-sm"
+                          />
+                        </div>
+                        <div className="flex gap-1.5 mt-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setFreq(null)}
+                            className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', !isCustom && curVal === defFreq ? 'bg-purple-200 text-purple-800' : 'bg-white/60 text-slate-500 hover:bg-white')}
+                          >Default</button>
+                          <button
+                            type="button"
+                            onClick={() => setFreq(xmpFreq)}
+                            className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', isCustom && curVal === xmpFreq ? 'bg-purple-200 text-purple-800' : 'bg-white/60 text-slate-500 hover:bg-white')}
+                          >XMP</button>
+                          {maxFreq > xmpFreq && (
+                            <button
+                              type="button"
+                              onClick={() => setFreq(maxFreq)}
+                              className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', isCustom && curVal === maxFreq ? 'bg-purple-200 text-purple-800' : 'bg-white/60 text-slate-500 hover:bg-white')}
+                            >OC</button>
+                          )}
+                        </div>
+                        {isCustom && curVal !== xmpFreq && (
+                          <div className="text-xs text-amber-600 bg-amber-50 p-1.5 rounded mt-1">⚠ XMP disabled: using {curVal} MHz instead of rated {xmpFreq} MHz</div>
+                        )}
+                        {!isCustom && xmpFreq > cpuDef && (
+                          <div className="text-xs text-slate-400 bg-white/50 p-1.5 rounded mt-1">ℹ Capped to CPU default ({defFreq} MHz). Enable XMP for {xmpFreq} MHz</div>
+                        )}
+                      </>
+                    )
                   })()}
                 </div>
               )}
