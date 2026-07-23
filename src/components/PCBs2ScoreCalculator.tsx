@@ -44,6 +44,10 @@ interface GPU {
   wattage: number
   chipset: string
   chipset_series: string
+  base_core_clock_freq?: number
+  base_mem_clock_freq?: number
+  gpu_max_clock?: number
+  gpu_max_mem_clock?: number
 }
 
 interface RAM {
@@ -71,7 +75,8 @@ interface CalculatorState {
   selectedRAM: string | null
   ramQuantity: number
   cpuFreq: number
-  overclockGPU: boolean
+  gpuCoreFreq: number
+  gpuMemFreq: number
   effectiveRamFreq: number | null
 }
 
@@ -137,6 +142,29 @@ function calcTotalScore(cpuScore: number, gpuScore: number): number {
   if (cpuScore <= 0 || gpuScore <= 0) return 0
   const w = 0.15
   return Math.trunc(1 / (w / cpuScore + (1 - w) / gpuScore))
+}
+
+function calcGpuScore(gpu: GPU, coreFreq?: number, memFreq?: number): number {
+  const baseScore = Number(gpu.single_gpu_graphics_score) || 0
+  if (baseScore === 0) return 0
+  const ocScore = Number(gpu.oc_single_gpu_score ?? baseScore)
+  if (ocScore === baseScore) return ocScore
+
+  const baseCore = Number(gpu.base_core_clock_freq)
+  const baseMem = Number(gpu.base_mem_clock_freq)
+  const maxCore = Number(gpu.gpu_max_clock)
+  const maxMem = Number(gpu.gpu_max_mem_clock)
+  const curCore = Number(coreFreq && coreFreq > 0 ? coreFreq : baseCore) || baseCore
+  const curMem = Number(memFreq && memFreq > 0 ? memFreq : baseMem) || baseMem
+
+  if (!baseCore || !baseMem || !maxCore || !maxMem || maxCore <= baseCore || maxMem <= baseMem)
+    return baseScore
+
+  const tCore = (curCore - baseCore) / (maxCore - baseCore)
+  const tMem = (curMem - baseMem) / (maxMem - baseMem)
+  const t = Math.min(1, (tCore + tMem) / 2)
+
+  return Math.trunc(baseScore + (ocScore - baseScore) * t)
 }
 
 function getRank(totalScore: number): ScoreResult['rank'] {
@@ -216,7 +244,8 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
     selectedRAM: null,
     ramQuantity: 1,
     cpuFreq: 0,
-    overclockGPU: false,
+    gpuCoreFreq: 0,
+    gpuMemFreq: 0,
     effectiveRamFreq: null,
   })
 
@@ -306,12 +335,8 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
   let rank: ScoreResult['rank'] = 'Error'
 
   if (selectedCPU && selectedGPU && selectedRAM) {
-    const gpuBase = state.overclockGPU
-      ? (selectedGPU.oc_single_gpu_score || selectedGPU.single_gpu_graphics_score)
-      : selectedGPU.single_gpu_graphics_score
-    gpuScore = gpuBase
-
     cpuScore = calcCpuScore(selectedCPU, selectedRAM, state.ramQuantity, state.cpuFreq || undefined, state.effectiveRamFreq ?? undefined)
+    gpuScore = calcGpuScore(selectedGPU, state.gpuCoreFreq || undefined, state.gpuMemFreq || undefined)
     totalScore = calcTotalScore(cpuScore, gpuScore)
     rank = getRank(totalScore)
   }
@@ -479,7 +504,10 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
               <SearchableSelect
                   options={availableGPUs}
                   value={state.selectedGPU}
-                  onChange={(id) => setState((p) => ({ ...p, selectedGPU: id }))}
+                  onChange={(id) => setState((p) => {
+                    const gpu = gpus.find((g) => g.id === id)
+                    return { ...p, selectedGPU: id, gpuCoreFreq: gpu?.base_core_clock_freq ?? 0, gpuMemFreq: gpu?.base_mem_clock_freq ?? 0 }
+                  })}
                   placeholder="Select GPU..."
                   getLabel={(gpu) => `${gpu.manufacturer} ${gpu.part_name}`}
                 />
@@ -489,6 +517,44 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                   <div className="flex justify-between"><span className="text-slate-600">VRAM:</span><span className="font-semibold">{selectedGPU.vram_gb} GB</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">TDP:</span><span className="font-semibold">{selectedGPU.wattage} W</span></div>
                   <div className="flex justify-between"><span className="text-slate-600">Series:</span><span className="font-semibold">{selectedGPU.chipset_series}</span></div>
+                  {selectedGPU.oc_single_gpu_score && selectedGPU.base_core_clock_freq && selectedGPU.gpu_max_clock && selectedGPU.gpu_max_clock > selectedGPU.base_core_clock_freq && (
+                    <div className="pt-2 border-t border-green-200 space-y-2 mt-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Core Clock:</span>
+                        <span className="font-semibold text-green-700">{state.gpuCoreFreq || selectedGPU.base_core_clock_freq} MHz</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={selectedGPU.base_core_clock_freq}
+                        max={selectedGPU.gpu_max_clock}
+                        step={1}
+                        value={state.gpuCoreFreq || selectedGPU.base_core_clock_freq}
+                        onChange={(e) => setState((p) => ({ ...p, gpuCoreFreq: Number(e.target.value) }))}
+                        className="w-full h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                      />
+                      <div className="flex justify-between text-xs text-slate-400 mt-0.5">
+                        <span>{selectedGPU.base_core_clock_freq} MHz</span>
+                        <span>{selectedGPU.gpu_max_clock} MHz</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Mem Clock:</span>
+                        <span className="font-semibold text-green-700">{state.gpuMemFreq || selectedGPU.base_mem_clock_freq} MHz</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={selectedGPU.base_mem_clock_freq}
+                        max={selectedGPU.gpu_max_mem_clock}
+                        step={1}
+                        value={state.gpuMemFreq || selectedGPU.base_mem_clock_freq}
+                        onChange={(e) => setState((p) => ({ ...p, gpuMemFreq: Number(e.target.value) }))}
+                        className="w-full h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                      />
+                      <div className="flex justify-between text-xs text-slate-400 mt-0.5">
+                        <span>{selectedGPU.base_mem_clock_freq} MHz</span>
+                        <span>{selectedGPU.gpu_max_mem_clock} MHz</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -582,37 +648,6 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-              <TrendingUp className="h-5 w-5 text-orange-600 mr-2" />
-              Overclock Options
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {([
-                { label: 'GPU Overclock', desc: 'Increases GPU score', key: 'overclockGPU' as const },
-              ]).map(({ label, desc, key }) => (
-                <div key={key} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                  <div>
-                    <h3 className="font-medium text-slate-900">{label}</h3>
-                    <p className="text-sm text-slate-600">{desc}</p>
-                  </div>
-                  <button
-                    onClick={() => setState((p) => ({ ...p, [key]: !p[key] }))}
-                    className={clsx(
-                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                      state[key] ? 'bg-orange-500' : 'bg-slate-300',
-                    )}
-                  >
-                    <span className={clsx(
-                      'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                      state[key] ? 'translate-x-6' : 'translate-x-1',
-                    )} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl shadow-2xl p-8 text-white">
             <h2 className="text-2xl font-bold mb-6 text-center">Your 3DMark Score Estimate</h2>
 
@@ -665,7 +700,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
                 <div className="flex justify-center">
                   <button
-                    onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, cpuFreq: 0, overclockGPU: false, effectiveRamFreq: null })}
+                    onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, cpuFreq: 0, gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null })}
                     className="px-5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-slate-400 hover:text-white transition-colors"
                   >
                     Reset
