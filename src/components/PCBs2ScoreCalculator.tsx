@@ -85,6 +85,7 @@ interface CalculatorState {
 interface LevelSettings {
   level: number
   percent: number
+  isSandbox?: boolean
 }
 
 interface ScoreResult {
@@ -259,7 +260,8 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
       showSettings: boolean
       draftLevel: number
       draftPercent: number
-    } = { levelSettings: null, showSettings: false, draftLevel: 1, draftPercent: 0 }
+      draftSandbox: boolean
+    } = { levelSettings: null, showSettings: false, draftLevel: 1, draftPercent: 0, draftSandbox: false }
     try {
       const raw = localStorage.getItem('pcbs2_level')
       if (raw) {
@@ -268,6 +270,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
           init.levelSettings = parsed
           init.draftLevel = parsed.level
           init.draftPercent = parsed.percent
+          init.draftSandbox = parsed.isSandbox ?? false
           return init
         }
       }
@@ -281,6 +284,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
   const [showSettings, setShowSettings] = useState(initData.showSettings)
   const [draftLevel, setDraftLevel] = useState(initData.draftLevel)
   const [draftPercent, setDraftPercent] = useState(initData.draftPercent)
+  const [draftSandbox, setDraftSandbox] = useState(initData.draftSandbox)
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('pcbs2_dark')
@@ -313,8 +317,8 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
   const maxLevel = allLevels.length > 0 ? Math.max(...allLevels) : 30
 
-  const saveSettings = useCallback((lvl: number, pct: number) => {
-    const s: LevelSettings = { level: lvl, percent: pct }
+  const saveSettings = useCallback((lvl: number, pct: number, sandbox: boolean) => {
+    const s: LevelSettings = { level: lvl, percent: pct, isSandbox: sandbox }
     localStorage.setItem('pcbs2_level', JSON.stringify(s))
     setLevelSettings(s)
     setShowSettings(false)
@@ -323,18 +327,25 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
   const openSettings = () => {
     setDraftLevel(levelSettings?.level ?? 1)
     setDraftPercent(levelSettings?.percent ?? 0)
+    setDraftSandbox(levelSettings?.isSandbox ?? false)
     setShowSettings(true)
   }
 
-  const availableCPUs = levelSettings
-    ? cpus.filter((c) => !isLocked(c.level, c.percent_through, levelSettings.level, levelSettings.percent))
-    : cpus
-  const availableGPUs = levelSettings
-    ? gpus.filter((g) => !isLocked(g.level, g.percent_through, levelSettings.level, levelSettings.percent))
-    : gpus
-  const availableRAMs = levelSettings
-    ? rams.filter((r) => !isLocked(r.level, r.percent_through, levelSettings.level, levelSettings.percent))
-    : rams
+  const availableCPUs = levelSettings?.isSandbox
+    ? cpus
+    : levelSettings
+      ? cpus.filter((c) => !isLocked(c.level, c.percent_through, levelSettings.level, levelSettings.percent))
+      : cpus
+  const availableGPUs = levelSettings?.isSandbox
+    ? gpus
+    : levelSettings
+      ? gpus.filter((g) => !isLocked(g.level, g.percent_through, levelSettings.level, levelSettings.percent))
+      : gpus
+  const availableRAMs = levelSettings?.isSandbox
+    ? rams
+    : levelSettings
+      ? rams.filter((r) => !isLocked(r.level, r.percent_through, levelSettings.level, levelSettings.percent))
+      : rams
 
   const levelSettingsKey = levelSettings ? `${levelSettings.level}-${levelSettings.percent}` : null
   useEffect(() => {
@@ -395,46 +406,66 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
             </div>
 
             <div className="space-y-6">
-              <div>
-                <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-                  <span>{t('level')}</span>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{draftLevel}</span>
-                </label>
-                <input
-                  type="range"
-                  min={1}
-                  max={maxLevel}
-                  value={draftLevel}
-                  onChange={(e) => setDraftLevel(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                />
-                <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
-                  <span>1</span>
-                  <span>{maxLevel}</span>
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-700 dark:text-gray-300">{t('sandbox_mode')}</span>
+                <button
+                  onClick={() => setDraftSandbox((p) => !p)}
+                  className={clsx(
+                    'relative w-11 h-6 rounded-full transition-colors',
+                    draftSandbox ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-gray-600'
+                  )}
+                >
+                  <span className={clsx(
+                    'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
+                    draftSandbox && 'translate-x-5'
+                  )} />
+                </button>
               </div>
 
-              <div>
-                <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-                  <span>{t('progress_through')}</span>
-                  <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{draftPercent}%</span>
-                </label>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={draftPercent}
-                  onChange={(e) => setDraftPercent(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                />
-                <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
-                  <span>0%</span>
-                  <span>100%</span>
-                </div>
-              </div>
+              {!draftSandbox && (
+                <>
+                  <div>
+                    <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+                      <span>{t('level')}</span>
+                      <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{draftLevel}</span>
+                    </label>
+                    <input
+                      type="range"
+                      min={1}
+                      max={maxLevel}
+                      value={draftLevel}
+                      onChange={(e) => setDraftLevel(Number(e.target.value))}
+                      className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
+                    <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
+                      <span>1</span>
+                      <span>{maxLevel}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+                      <span>{t('progress_through')}</span>
+                      <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{draftPercent}%</span>
+                    </label>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={draftPercent}
+                      onChange={(e) => setDraftPercent(Number(e.target.value))}
+                      className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
+                    <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
+                      <span>0%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <button
-                onClick={() => saveSettings(draftLevel, draftPercent)}
+                onClick={() => saveSettings(draftLevel, draftPercent, draftSandbox)}
                 className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors"
               >
                 {levelSettings ? t('save') : t('get_started')}
@@ -499,7 +530,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
             {levelSettings && (
               <div className="mt-4 inline-flex items-center gap-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-4 py-2 rounded-full text-sm font-medium">
                 <TrendingUp className="h-4 w-4" />
-                {t('level_badge', String(levelSettings.level), String(levelSettings.percent))}
+                {levelSettings.isSandbox ? t('sandbox_mode') : t('level_badge', String(levelSettings.level), String(levelSettings.percent))}
               </div>
             )}
           </div>
