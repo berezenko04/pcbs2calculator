@@ -102,7 +102,7 @@ function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, overclock: boolean, ef
   if (base === 0) return 0
 
   const freq = Number(cpu.frequency) || 0
-  const ramFreq = Number(effectiveRamFreq ?? ram.frequency) || 0
+  const ramFreq = Number(effectiveRamFreq ?? Math.min(ram.frequency, cpu.default_memory_speed)) || 0
   const a = Number(cpu.coreclockmultiplier) || 0
   const b = Number(cpu.memchannelsmultiplier) || 0
   const c = Number(cpu.memclockmultiplier) || 0
@@ -499,7 +499,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                       min={800}
                       max={6000}
                       step={100}
-                      value={state.effectiveRamFreq ?? selectedRAM.frequency}
+                      value={state.effectiveRamFreq ?? Math.min(selectedRAM.frequency, selectedCPU?.default_memory_speed ?? selectedRAM.frequency)}
                       onChange={(e) => {
                         const v = e.target.value ? Number(e.target.value) : null
                         setState((p) => ({ ...p, effectiveRamFreq: v }))
@@ -507,11 +507,16 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
                       className="w-24 p-1 text-right border border-purple-300 rounded bg-white text-slate-900 font-semibold text-sm"
                     />
                   </div>
-                  {state.effectiveRamFreq !== null && state.effectiveRamFreq !== selectedRAM.frequency && (
-                    <div className="text-xs text-amber-600 bg-amber-50 p-1.5 rounded mt-1">
-                      ⚠ XMP disabled: using effective freq ({state.effectiveRamFreq} MHz) instead of rated ({selectedRAM.frequency} MHz)
-                    </div>
-                  )}
+                  {(() => {
+                    const defaultFreq = Math.min(selectedRAM.frequency, selectedCPU?.default_memory_speed ?? selectedRAM.frequency)
+                    if (state.effectiveRamFreq !== null && state.effectiveRamFreq !== selectedRAM.frequency) {
+                      return <div className="text-xs text-amber-600 bg-amber-50 p-1.5 rounded mt-1">⚠ XMP disabled: using effective freq ({state.effectiveRamFreq} MHz) instead of rated ({selectedRAM.frequency} MHz)</div>
+                    }
+                    if (state.effectiveRamFreq === null && selectedRAM.frequency > (selectedCPU?.default_memory_speed ?? selectedRAM.frequency)) {
+                      return <div className="text-xs text-slate-400 bg-white/50 p-1.5 rounded mt-1">ℹ Capped to CPU default memory speed ({defaultFreq} MHz). Enable XMP or set Freq (BIOS) manually for rated speed.</div>
+                    }
+                    return null
+                  })()}
                 </div>
               )}
             </div>
