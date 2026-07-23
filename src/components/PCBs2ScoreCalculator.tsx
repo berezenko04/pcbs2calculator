@@ -171,11 +171,11 @@ function SearchableSelect<T extends { id: string }>({ options, value, onChange, 
         onChange={(e) => { setSearch(e.target.value); setIsOpen(true) }}
         onFocus={() => { setIsOpen(true); setSearch('') }}
         placeholder={placeholder}
-        className="w-full p-3 pr-10 border border-slate-300 rounded-lg cursor-pointer bg-white truncate"
+        className="w-full p-2.5 pr-10 border border-slate-300 rounded-lg cursor-pointer bg-white text-sm"
       />
       <ChevronDown className="absolute right-3 top-4 h-4 w-4 text-slate-400 pointer-events-none" />
       {isOpen && (
-        <div className="absolute z-10 min-w-full w-max mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {filtered.length === 0 ? (
             <div className="p-3 text-slate-400 text-sm">No results</div>
           ) : (
@@ -183,7 +183,7 @@ function SearchableSelect<T extends { id: string }>({ options, value, onChange, 
               <button
                 key={item.id}
                 type="button"
-                className={clsx('w-full text-left p-3 text-sm hover:bg-blue-50 transition-colors whitespace-nowrap', item.id === value && 'bg-blue-100 font-semibold')}
+                className={clsx('w-full text-left p-3 text-sm hover:bg-blue-50 transition-colors', item.id === value && 'bg-blue-100 font-semibold')}
                 onClick={() => { onChange(item.id); setIsOpen(false); setSearch('') }}
               >
                 {getLabel(item)}
@@ -401,8 +401,8 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+            <div className="bg-white rounded-xl shadow-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <Cpu className="h-6 w-6 text-blue-600 mr-2" />
@@ -432,7 +432,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
               )}
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white rounded-xl shadow-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <Monitor className="h-6 w-6 text-green-600 mr-2" />
@@ -457,7 +457,7 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
               )}
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="bg-white rounded-xl shadow-lg p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <MemoryStick className="h-6 w-6 text-purple-600 mr-2" />
