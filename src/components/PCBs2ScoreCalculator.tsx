@@ -554,49 +554,55 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
 
             {selectedCPU && selectedGPU && selectedRAM && rank !== 'Error' ? (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                    <div className="text-sm text-slate-300 mb-1">CPU Score</div>
-                    <div className="text-3xl font-bold text-blue-400">{formatNumber(cpuScore)}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                    <div className="bg-blue-500/20 p-2.5 rounded-lg">
+                      <Cpu className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-400 uppercase tracking-wider">CPU Score</div>
+                      <div className="text-2xl font-bold text-blue-400">{formatNumber(cpuScore)}</div>
+                    </div>
                   </div>
-                  <div className="text-center bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                    <div className="text-sm text-slate-300 mb-1">GPU Score</div>
-                    <div className="text-3xl font-bold text-green-400">{formatNumber(gpuScore)}</div>
+                  <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                    <div className="bg-green-500/20 p-2.5 rounded-lg">
+                      <Monitor className="h-5 w-5 text-green-400" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-400 uppercase tracking-wider">GPU Score</div>
+                      <div className="text-2xl font-bold text-green-400">{formatNumber(gpuScore)}</div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="border-t border-white/20 pt-6 text-center">
-                  <div className="text-sm text-slate-300 mb-1">Total Score</div>
-                  <div className="text-5xl font-bold">{formatNumber(totalScore)}</div>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/10" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-slate-800 px-4 py-1 rounded-full text-xs text-slate-400 border border-white/10">TOTAL</span>
+                  </div>
+                </div>
+
+                <div className="text-center py-2">
+                  <div className="text-6xl font-bold tracking-tight">{formatNumber(totalScore)}</div>
                   <div className={clsx(
-                    'inline-flex items-center px-4 py-2 mt-4 rounded-full text-sm font-medium border',
+                    'inline-flex items-center gap-2 px-5 py-2 mt-3 rounded-full text-sm font-semibold border',
                     rank === 'Elite' && 'bg-green-500/20 text-green-300 border-green-500/30',
                     rank === 'Performance' && 'bg-blue-500/20 text-blue-300 border-blue-500/30',
                     rank === 'Good' && 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
                     rank === 'Average' && 'bg-orange-500/20 text-orange-300 border-orange-500/30',
                     rank === 'Budget' && 'bg-red-500/20 text-red-300 border-red-500/30',
                   )}>
-                    <TrendingUp className="h-4 w-4 mr-2" />
+                    <TrendingUp className="h-4 w-4" />
                     {rank} Performance
-                  </div>
-                </div>
-
-                <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-sm">
-                  <h3 className="text-lg font-semibold mb-3">Component Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div><span className="text-slate-400">CPU:</span> {selectedCPU.series} (Lvl {selectedCPU.level})</div>
-                    <div><span className="text-slate-400">Cores:</span> {selectedCPU.cores}</div>
-                    <div><span className="text-slate-400">Freq:</span> {selectedCPU.frequency} MHz</div>
-                    <div><span className="text-slate-400">GPU:</span> {selectedGPU.chipset_series} (Lvl {selectedGPU.level})</div>
-                    <div><span className="text-slate-400">VRAM:</span> {selectedGPU.vram_gb} GB</div>
-                    <div><span className="text-slate-400">RAM:</span> {selectedRAM.total_size_gb * state.ramQuantity} GB @ {selectedRAM.frequency} MHz</div>
                   </div>
                 </div>
 
                 <div className="flex justify-center">
                   <button
                     onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, overclockCPU: false, overclockGPU: false, effectiveRamFreq: null })}
-                    className="px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition-colors"
+                    className="px-5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-slate-400 hover:text-white transition-colors"
                   >
                     Reset
                   </button>
