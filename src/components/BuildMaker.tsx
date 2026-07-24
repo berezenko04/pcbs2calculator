@@ -222,14 +222,12 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
     const gpuQty = useSli ? 2 : 1
     const ramQty = 2
 
-    let iterations = 0
-    const MAX_ITER = 500000
+    const seen = new Set<string>()
 
     for (const cpu of cpuCandidates) {
-      const compatMbs = mbCandidates.filter(mb => mb.cpu_socket === cpu.cpu_socket)
-      if (compatMbs.length === 0) continue
-
       const cpuSocket = cpu.cpu_socket || ''
+      const compatMbs = mbCandidates.filter(mb => mb.cpu_socket === cpuSocket)
+      if (compatMbs.length === 0) continue
       const compatCoolers = coolerCandidates.filter(cl => isCoolerSocketCompatible(cpuSocket, cl))
       if (compatCoolers.length === 0) continue
 
@@ -239,62 +237,85 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         if (compatPsus.length === 0) continue
 
         for (const ram of ramCandidates) {
+          const coreKey = `${cpu.id}|${gpu.id}|${ram.id}`
+          if (seen.has(coreKey)) continue
+          seen.add(coreKey)
+
+          const score = estimateBuildScore(cpu, gpu, ram, ramQty, gpuQty, cpuOc, gpuOc)
+          if (score.totalScore < targetScore) continue
+
+          const cpuPrice = Number(cpu.price)
+          const gpuPrice = Number(gpu.price) * gpuQty
+          const ramPrice = Number(ram.price) * ramQty
+
+          let best: BuildResultFull | null = null
+
           for (const mb of compatMbs) {
             const mbSize = mb.motherboard_size || ''
             const compatCases = caseCandidates.filter(c => isCaseCompatible(c, mbSize))
             if (compatCases.length === 0) continue
 
-            for (const cooler of compatCoolers) {
-              const isAirCooler = cooler.type?.toLowerCase().includes('air')
+            const mbPrice = Number(mb.price)
+            const coreTotal = cpuPrice + gpuPrice + ramPrice + mbPrice
+            const remainingBudget = avail - coreTotal
+            if (remainingBudget < 0) continue
 
-              for (const psu of compatPsus) {
-                for (const c of compatCases) {
-                  if (psu.size && c.max_psu_length) {
-                    const psuLen = parseInt(String(psu.size))
-                    if (!isNaN(psuLen) && psuLen > Number(c.max_psu_length)) continue
-                  }
+            const cheapestCooler = compatCoolers
+              .filter(cl => {
+                const isAir = cl.type?.toLowerCase().includes('air')
+                return !isAir || !cl.height || compatCases.some(c => !c.max_cpu_fan_height || Number(cl.height!) <= Number(c.max_cpu_fan_height))
+              })
+              .sort((a, b) => Number(a.price) - Number(b.price))[0]
+            if (!cheapestCooler || Number(cheapestCooler.price) > remainingBudget) continue
+            let rem = remainingBudget - Number(cheapestCooler.price)
 
-                  if (isAirCooler && cooler.height && c.max_cpu_fan_height && Number(cooler.height) > Number(c.max_cpu_fan_height)) continue
+            const cheapestPsu = compatPsus.sort((a, b) => Number(a.price) - Number(b.price))[0]
+            if (!cheapestPsu || Number(cheapestPsu.price) > rem) continue
+            rem -= Number(cheapestPsu.price)
 
-                  for (const storage of storageCandidates) {
-                    iterations++
-                    if (iterations > MAX_ITER) break
-
-                    const totalPrice = Number(cpu.price) + Number(gpu.price) * gpuQty + Number(ram.price) * ramQty
-                      + Number(mb.price) + Number(psu.price) + Number(storage.price) + Number(c.price) + Number(cooler.price)
-
-                    if (totalPrice > avail) continue
-
-                    const score = estimateBuildScore(cpu, gpu, ram, ramQty, gpuQty, cpuOc, gpuOc)
-                    if (score.totalScore < targetScore) continue
-
-                    found.push({
-                      cpu, gpu, ram, ramQty, gpuQty,
-                      motherboard: mb,
-                      psu,
-                      storage,
-                      case: c,
-                      cooler,
-                      totalPrice,
-                      cpuScore: score.cpuScore,
-                      gpuScore: score.gpuScore,
-                      totalScore: score.totalScore,
-                      rank: score.rank,
-                    })
-                  }
-                  if (iterations > MAX_ITER) break
+            const cheapestCase = compatCases
+              .filter(c => {
+                if (cheapestPsu.size && c.max_psu_length) {
+                  const psuLen = parseInt(String(cheapestPsu.size))
+                  if (!isNaN(psuLen) && psuLen > Number(c.max_psu_length)) return false
                 }
-                if (iterations > MAX_ITER) break
-              }
-              if (iterations > MAX_ITER) break
+                if (cheapestCooler.type?.toLowerCase().includes('air') && cheapestCooler.height && c.max_cpu_fan_height) {
+                  if (Number(cheapestCooler.height) > Number(c.max_cpu_fan_height)) return false
+                }
+                return true
+              })
+              .sort((a, b) => Number(a.price) - Number(b.price))[0]
+            if (!cheapestCase || Number(cheapestCase.price) > rem) continue
+            rem -= Number(cheapestCase.price)
+
+            const cheapestStorage = storageCandidates.sort((a, b) => Number(a.price) - Number(b.price))[0]
+            if (!cheapestStorage || Number(cheapestStorage.price) > rem) continue
+
+            const totalPrice = coreTotal + Number(cheapestCooler.price) + Number(cheapestPsu.price)
+              + Number(cheapestCase.price) + Number(cheapestStorage.price)
+
+            const candidate: BuildResultFull = {
+              cpu, gpu, ram, ramQty, gpuQty,
+              motherboard: mb,
+              psu: cheapestPsu,
+              storage: cheapestStorage,
+              case: cheapestCase,
+              cooler: cheapestCooler,
+              totalPrice,
+              cpuScore: score.cpuScore,
+              gpuScore: score.gpuScore,
+              totalScore: score.totalScore,
+              rank: score.rank,
             }
-            if (iterations > MAX_ITER) break
+
+            if (!best || candidate.totalPrice < best.totalPrice) {
+              best = candidate
+            }
           }
-          if (iterations > MAX_ITER) break
+
+          if (best) found.push(best)
         }
-        if (iterations > MAX_ITER) break
       }
-      if (iterations > MAX_ITER) break
     }
 
     found.sort((a, b) => b.totalScore - a.totalScore)
@@ -307,10 +328,14 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
     setResults([])
     setSearched(false)
     setTimeout(() => {
-      if (mode === 'full') {
-        doFullSearch()
-      } else {
-        doSimpleSearch()
+      try {
+        if (mode === 'full') {
+          doFullSearch()
+        } else {
+          doSimpleSearch()
+        }
+      } catch (e) {
+        console.error(e)
       }
       setSearching(false)
     }, 50)
