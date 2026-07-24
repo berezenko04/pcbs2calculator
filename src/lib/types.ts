@@ -44,6 +44,7 @@ export interface GPU {
   wattage: number
   chipset: string
   chipset_series: string
+  length?: number
   base_core_clock_freq?: number
   base_mem_clock_freq?: number
   gpu_max_clock?: number
@@ -115,7 +116,14 @@ export interface Case {
   motherboard_size?: string
   max_gpu_length?: number
   max_cpu_fan_height?: number
+  max_psu_length?: number
   psu_size?: string
+  mini_itx?: boolean
+  micro_atx?: boolean
+  s_atx?: boolean
+  e_atx?: boolean
+  xl_atx?: boolean
+  restricted_gpu_length?: number
 }
 
 export interface Cooler {
@@ -129,7 +137,19 @@ export interface Cooler {
   height?: number
   air_flow?: number
   size?: string
-  sockets?: string[]
+  no_fan?: boolean
+  cpu_socket_list?: string
+  am4?: boolean
+  am3?: boolean
+  fm2?: boolean
+  lga_1151_coffee_lake?: boolean
+  lga_1151_kaby_lake?: boolean
+  lga_1151_skylake?: boolean
+  lga_1200?: boolean
+  lga_2011_v3?: boolean
+  lga_2066?: boolean
+  tr4?: boolean
+  strx4?: boolean
 }
 
 export interface CalculatorState {
