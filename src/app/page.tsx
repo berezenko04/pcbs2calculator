@@ -41,7 +41,7 @@ function HomeInner() {
   return (
     <AppShell activeTab={activeTab} onTabChange={setActiveTab}>
       {activeTab === 'calculator' && <PCBs2ScoreCalculator cpus={cpus} gpus={gpus} rams={rams} />}
-      {activeTab === 'buildmaker' && <BuildMaker />}
+      {activeTab === 'buildmaker' && <BuildMaker cpus={cpus as any} gpus={gpus as any} rams={rams as any} />}
     </AppShell>
   )
 }

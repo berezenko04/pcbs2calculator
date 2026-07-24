@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import clsx from 'clsx'
 import { Calculator, Cpu, Gpu, MemoryStick, TrendingUp, Settings, X, ChevronDown } from 'lucide-react'
 import { useLang } from '@/lib/i18n/context'
+import { calcCpuScore, calcGpuScore, calcTotalScore, getRank, supportsSli, formatNumber } from '@/lib/calculator'
 
 interface CPU {
   id: string
@@ -24,6 +25,8 @@ interface CPU {
   increase?: number
   overclock_cpu_score_increase?: number
   series: string
+  chipset: string
+  wattage: number
   default_memory_speed: number
   max_memory_channels?: number
   coreclockmultiplier?: number
@@ -111,85 +114,6 @@ function isLocked(
   if (componentLevel > userLevel) return true
   if (componentPercent === true || componentPercent == null) return false
   return userPercent < Number(componentPercent)
-}
-
-function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number, effectiveRamFreq?: number): number {
-  const freq = Number(cpuFreq && cpuFreq > 0 ? cpuFreq : cpu.frequency) || 0
-  const baseFreq = Number(cpu.frequency) || 0
-  let base = Number(cpu.basic_cpu_score) || 0
-  if (freq > baseFreq && cpu.can_overclock && cpu.max_freq && cpu.overclock_basic_cpu_score) {
-    const maxFreq = Number(cpu.max_freq)
-    if (maxFreq > baseFreq) {
-      const t = Math.min(1, (freq - baseFreq) / (maxFreq - baseFreq))
-      base += (Number(cpu.overclock_basic_cpu_score) - base) * t
-    }
-  }
-  if (base === 0) return 0
-
-  const ramFreq = Number(effectiveRamFreq ?? Math.min(ram.frequency, cpu.default_memory_speed)) || 0
-  const a = Number(cpu.coreclockmultiplier) || 0
-  const b = Number(cpu.memchannelsmultiplier) || 0
-  const c = Number(cpu.memclockmultiplier) || 0
-  const d = Number(cpu.finaladjustment) || 0
-  const defMem = Number(cpu.default_memory_speed) || 2666
-  const sticks = Math.max(1, ramQty)
-  const maxChannels = Number(cpu.max_memory_channels) || 2
-  const channels = Math.min(sticks, maxChannels)
-
-  const opt = a * freq + b * maxChannels + c * defMem + d
-  const cur = a * freq + b * channels + c * ramFreq + d
-
-  if (opt === 0) return Math.trunc(base)
-  const result = Math.trunc(base * cur / opt)
-  return Number.isFinite(result) ? result : Math.trunc(base)
-}
-
-function calcTotalScore(cpuScore: number, gpuScore: number): number {
-  if (cpuScore <= 0 || gpuScore <= 0) return 0
-  const w = 0.15
-  return Math.trunc(1 / (w / cpuScore + (1 - w) / gpuScore))
-}
-
-function supportsSli(gpu: GPU): boolean {
-  return gpu.double_gpu_graphics_score !== undefined
-    && gpu.double_gpu_graphics_score !== null
-    && gpu.double_gpu_graphics_score !== 'false'
-}
-
-function calcGpuScore(gpu: GPU, coreFreq?: number, memFreq?: number, gpuQuantity?: number): number {
-  const isDual = gpuQuantity === 2 && supportsSli(gpu)
-  const baseScore = isDual
-    ? Number(gpu.double_gpu_graphics_score) || 0
-    : Number(gpu.single_gpu_graphics_score) || 0
-  if (baseScore === 0) return 0
-  const ocScore = isDual
-    ? Number(gpu.oc_double_gpu_score ?? gpu.double_gpu_graphics_score ?? baseScore)
-    : Number(gpu.oc_single_gpu_score ?? baseScore)
-  if (ocScore === baseScore) return ocScore
-
-  const baseCore = Number(gpu.base_core_clock_freq)
-  const baseMem = Number(gpu.base_mem_clock_freq)
-  const maxCore = Number(gpu.gpu_max_clock)
-  const maxMem = Number(gpu.gpu_max_mem_clock)
-  const curCore = Number(coreFreq && coreFreq > 0 ? coreFreq : baseCore) || baseCore
-  const curMem = Number(memFreq && memFreq > 0 ? memFreq : baseMem) || baseMem
-
-  if (!baseCore || !baseMem || !maxCore || !maxMem || maxCore <= baseCore || maxMem <= baseMem)
-    return baseScore
-
-  const tCore = (curCore - baseCore) / (maxCore - baseCore)
-  const tMem = (curMem - baseMem) / (maxMem - baseMem)
-  const t = Math.min(1, (tCore + tMem) / 2)
-
-  return Math.trunc(baseScore + (ocScore - baseScore) * t)
-}
-
-function getRank(totalScore: number): ScoreResult['rank'] {
-  if (totalScore >= 30000) return 'Elite'
-  if (totalScore >= 20000) return 'Performance'
-  if (totalScore >= 15000) return 'Good'
-  if (totalScore >= 8000) return 'Average'
-  return 'Budget'
 }
 
 function LevelSettingsModal({ initialLevel, initialPercent, initialSandbox, maxLevel, hasExistingSettings, onClose, onSave }: {
@@ -498,7 +422,6 @@ export default function PCBs2ScoreCalculator({ cpus, gpus, rams }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelSettingsKey])
 
-  const formatNumber = (num: number): string => new Intl.NumberFormat('en-US').format(num)
 
   const selectedCPU = state.selectedCPU ? cpus.find((c) => c.id === state.selectedCPU) : null
   const selectedGPU = state.selectedGPU ? gpus.find((g) => g.id === state.selectedGPU) : null
