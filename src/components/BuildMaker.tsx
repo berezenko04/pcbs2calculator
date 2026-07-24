@@ -104,6 +104,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
     const found: BuildResultSimple[] = []
     const gpuQty = useSli ? 2 : 1
     const ramQty = 2
+    const bestBuilds = new Map<string, BuildResultSimple>()
 
     for (const cpu of cpuCandidates) {
       for (const gpu of gpuCandidates) {
@@ -114,17 +115,21 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
           const score = estimateBuildScore(cpu, gpu, ram, ramQty, gpuQty, cpuOc, gpuOc)
           if (score.totalScore < targetScore) continue
 
-          found.push({
-            cpu, gpu, ram, ramQty, gpuQty,
-            totalPrice,
-            cpuScore: score.cpuScore,
-            gpuScore: score.gpuScore,
-            totalScore: score.totalScore,
-            rank: score.rank,
-          })
+          const key = `${cpu.id}|${gpu.id}|${gpuQty}|${ramQty}`
+          if (!bestBuilds.has(key) || score.totalScore > bestBuilds.get(key)!.totalScore) {
+            bestBuilds.set(key, {
+              cpu, gpu, ram, ramQty, gpuQty,
+              totalPrice,
+              cpuScore: score.cpuScore,
+              gpuScore: score.gpuScore,
+              totalScore: score.totalScore,
+              rank: score.rank,
+            })
+          }
         }
       }
     }
+    found.push(...bestBuilds.values())
 
     found.sort((a, b) => b.totalScore - a.totalScore)
     setResults(found.slice(0, 10))
