@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { LangProvider } from '@/lib/i18n/context'
 import AppShell, { type TabId } from '@/components/AppShell'
-import PCBs2ScoreCalculator from '@/components/PCBs2ScoreCalculator'
+import type { CPU, GPU, RAM } from '@/lib/types'
+import Calculator from '@/components/calculator/Calculator'
 import BuildMaker from '@/components/BuildMaker'
 import { useLang } from '@/lib/i18n/context'
 
@@ -17,9 +18,9 @@ function LoadingFallback() {
 }
 
 function HomeInner() {
-  const [cpus, setCpus] = useState<any[]>([])
-  const [gpus, setGpus] = useState<any[]>([])
-  const [rams, setRams] = useState<any[]>([])
+  const [cpus, setCpus] = useState<CPU[]>([])
+  const [gpus, setGpus] = useState<GPU[]>([])
+  const [rams, setRams] = useState<RAM[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('calculator')
 
@@ -40,8 +41,8 @@ function HomeInner() {
 
   return (
     <AppShell activeTab={activeTab} onTabChange={setActiveTab}>
-      {activeTab === 'calculator' && <PCBs2ScoreCalculator cpus={cpus} gpus={gpus} rams={rams} />}
-      {activeTab === 'buildmaker' && <BuildMaker cpus={cpus as any} gpus={gpus as any} rams={rams as any} />}
+      {activeTab === 'calculator' && <Calculator cpus={cpus} gpus={gpus} rams={rams} />}
+      {activeTab === 'buildmaker' && <BuildMaker cpus={cpus} gpus={gpus} rams={rams} />}
     </AppShell>
   )
 }

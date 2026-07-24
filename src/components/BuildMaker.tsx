@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { Wrench, Cpu, Gpu, MemoryStick, TrendingUp, Search, DollarSign, Target, Sliders, Info, Layers } from 'lucide-react'
 import { useLang } from '@/lib/i18n/context'
 import { estimateBuildScore, formatNumber } from '@/lib/calculator'
-import type { CPU, GPU, RAM } from '@/lib/calculator'
+import type { CPU, GPU, RAM } from '@/lib/types'
 
 const SOCKETS = ['AM4', 'LGA 1151 (Coffee Lake)', 'LGA 1151 (Kaby Lake)', 'LGA 1151 (Skylake)', 'LGA 1200', 'LGA 2066', 'TR4', 'sTRX4'] as const
 const RAM_SIZES = [8, 16, 32]
@@ -31,16 +31,16 @@ interface Props {
 export default function BuildMaker({ cpus, gpus, rams }: Props) {
   const { t } = useLang()
 
-  const [budget, setBudget] = useState(1500)
-  const [remaining, setRemaining] = useState(200)
-  const [targetScore, setTargetScore] = useState(15000)
+  const [budget, setBudget] = useState(0)
+  const [remaining, setRemaining] = useState(0)
+  const [targetScore, setTargetScore] = useState(0)
   const [socket, setSocket] = useState('')
   const [cpuBrand, setCpuBrand] = useState('')
   const [gpuBrand, setGpuBrand] = useState('')
   const [useSli, setUseSli] = useState(false)
   const [cpuOc, setCpuOc] = useState(false)
   const [gpuOc, setGpuOc] = useState(false)
-  const [minRamGb, setMinRamGb] = useState(16)
+  const [minRamGb, setMinRamGb] = useState(0)
   const [results, setResults] = useState<BuildResult[]>([])
   const [searched, setSearched] = useState(false)
 
@@ -211,6 +211,7 @@ export default function BuildMaker({ cpus, gpus, rams }: Props) {
             onChange={(e) => setMinRamGb(Number(e.target.value))}
             className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
           >
+            <option value="0">{t('bm_any')}</option>
             {RAM_SIZES.map((s) => <option key={s} value={s}>{s} GB</option>)}
           </select>
         </div>
