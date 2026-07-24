@@ -63,6 +63,75 @@ export interface RAM {
   max_speed?: number
 }
 
+export interface Motherboard {
+  id: string
+  part_name: string
+  manufacturer: string
+  price: number
+  level: number
+  percent_through?: number | boolean
+  chipset?: string
+  cpu_socket?: string
+  motherboard_size?: string
+  default_memory_speed?: number
+  max_memory_speed?: number
+  support_sli?: boolean
+  support_crossfire?: boolean
+  can_overclock?: boolean
+}
+
+export interface PSU {
+  id: string
+  part_name: string
+  manufacturer: string
+  price: number
+  level: number
+  percent_through?: number | boolean
+  wattage: number
+  size?: string
+  modularity?: string
+}
+
+export interface StorageDrive {
+  id: string
+  part_name: string
+  manufacturer: string
+  price: number
+  level: number
+  percent_through?: number | boolean
+  size_gb: number
+  type: string
+  speed?: number
+}
+
+export interface Case {
+  id: string
+  part_name: string
+  manufacturer: string
+  price: number
+  level: number
+  percent_through?: number | boolean
+  case_size?: string
+  motherboard_size?: string
+  max_gpu_length?: number
+  max_cpu_fan_height?: number
+  psu_size?: string
+}
+
+export interface Cooler {
+  id: string
+  part_name: string
+  manufacturer: string
+  price: number
+  level: number
+  percent_through?: number | boolean
+  type: string
+  height?: number
+  air_flow?: number
+  size?: string
+  sockets?: string[]
+}
+
 export interface CalculatorState {
   selectedCPU: string | null
   selectedGPU: string | null
