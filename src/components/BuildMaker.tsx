@@ -218,13 +218,29 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
     const gpuQty = useSli ? 2 : 1
     const ramQty = 2
 
-    // Pre-sort support components by price ascending for O(n) first-match
+    // Pre-sort support arrays by price
     const psusSorted = [...psuCandidates].sort((a, b) => Number(a.price) - Number(b.price))
     const storageSorted = [...storageCandidates].sort((a, b) => Number(a.price) - Number(b.price))
-    const casesSorted = [...caseCandidates].sort((a, b) => Number(a.price) - Number(b.price))
-    const coolersSorted = [...coolerCandidates].sort((a, b) => Number(a.price) - Number(b.price))
 
-    // Group motherboards by socket for O(1) lookup
+    // Pre-group coolers by socket compatibility
+    const allSockets = [...new Set(cpus.map(c => c.cpu_socket).filter(Boolean))]
+    const coolersBySocket: Record<string, Cooler[]> = {}
+    for (const sock of allSockets) {
+      coolersBySocket[sock!] = coolerCandidates
+        .filter(cl => isCoolerSocketCompatible(sock!, cl))
+        .sort((a, b) => Number(a.price) - Number(b.price))
+    }
+
+    // Pre-group cases by supported motherboard size
+    const allMoboSizes = [...new Set(motherboards.map(mb => mb.motherboard_size).filter(Boolean))]
+    const casesBySize: Record<string, Case[]> = {}
+    for (const size of allMoboSizes) {
+      casesBySize[size!] = caseCandidates
+        .filter(c => isCaseCompatible(c, size!))
+        .sort((a, b) => Number(a.price) - Number(b.price))
+    }
+
+    // Group motherboards by socket
     const mbBySocket: Record<string, Motherboard[]> = {}
     for (const mb of mbCandidates) {
       const s = mb.cpu_socket || ''
@@ -239,6 +255,8 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
       const cpuSocket = cpu.cpu_socket || ''
       const compatMbs = mbBySocket[cpuSocket] || []
       if (compatMbs.length === 0) continue
+      const compatCoolers = coolersBySocket[cpuSocket] || []
+      if (compatCoolers.length === 0) continue
 
       for (const gpu of gpuCandidates) {
         const totalTdp = getTotalTdp(cpu, gpu, gpuQty)
@@ -263,35 +281,36 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
             if (rem < 0) continue
 
             const mbSize = mb.motherboard_size || ''
+            const compatCases = casesBySize[mbSize] || []
+            if (compatCases.length === 0) continue
 
-            const cooler = coolersSorted.find(cl =>
-              isCoolerSocketCompatible(cpuSocket, cl) &&
-              Number(cl.price) <= rem &&
-              (!cl.type?.toLowerCase().includes('air') || !cl.height || true)
-            )
+            let cooler: Cooler | null = null
+            for (const cl of compatCoolers) {
+              if (Number(cl.price) <= rem) { cooler = cl; break }
+            }
             if (!cooler) continue
             rem -= Number(cooler.price)
 
-            const psu = psusSorted.find(p =>
-              Number(p.wattage) >= totalTdp &&
-              Number(p.price) <= rem
-            )
+            let psu: PSU | null = null
+            for (const p of psusSorted) {
+              if (Number(p.wattage) >= totalTdp && Number(p.price) <= rem) { psu = p; break }
+            }
             if (!psu) continue
             rem -= Number(psu.price)
 
-            const caseItem = casesSorted.find(c =>
-              isCaseCompatible(c, mbSize) &&
-              Number(c.price) <= rem &&
-              (!psu.size || !c.max_psu_length || parseInt(String(psu.size)) <= Number(c.max_psu_length)) &&
-              (!cooler.type?.toLowerCase().includes('air') || !cooler.height || !c.max_cpu_fan_height || Number(cooler.height) <= Number(c.max_cpu_fan_height))
-            )
+            let caseItem: Case | null = null
+            for (const c of compatCases) {
+              if (Number(c.price) > rem) continue
+              if (psu.size && c.max_psu_length && parseInt(String(psu.size)) > Number(c.max_psu_length)) continue
+              if (cooler.type?.toLowerCase().includes('air') && cooler.height && c.max_cpu_fan_height && Number(cooler.height) > Number(c.max_cpu_fan_height)) continue
+              caseItem = c; break
+            }
             if (!caseItem) continue
-            rem -= Number(caseItem.price)
 
-            const storage = storageSorted.find(s =>
-              (!storageType || s.type === storageType) &&
-              Number(s.price) <= rem
-            )
+            let storage: StorageDrive | null = null
+            for (const s of storageSorted) {
+              if (Number(s.price) <= rem) { storage = s; break }
+            }
             if (!storage) continue
 
             const totalPrice = coreTotal + Number(cooler.price) + Number(psu.price)
@@ -299,12 +318,8 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
 
             const candidate: BuildResultFull = {
               cpu, gpu, ram, ramQty, gpuQty,
-              motherboard: mb,
-              psu,
-              storage,
-              case: caseItem,
-              cooler,
-              totalPrice,
+              motherboard: mb, psu, storage,
+              case: caseItem, cooler, totalPrice,
               cpuScore: score.cpuScore,
               gpuScore: score.gpuScore,
               totalScore: score.totalScore,
