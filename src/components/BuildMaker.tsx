@@ -412,9 +412,9 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
                     <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
                       {i === 0 ? t('bm_best_match') : t('bm_option') + ' #' + (i + 1)}
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       <span className="text-sm text-slate-500 dark:text-gray-400">{t('bm_total')}:</span>
-                      <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{formatNumber(r.totalPrice)}</span>
+                      <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">${formatNumber(r.totalPrice)}</span>
                     </div>
                   </div>
 
