@@ -20,7 +20,7 @@ export default function Calculator({ cpus, gpus, rams }: Props) {
   const { t } = useLang()
   const [state, setState] = useState<CalculatorState>({
     selectedCPU: null, selectedGPU: null, selectedRAM: null,
-    ramQuantity: 0, cpuFreq: 0, gpuQuantity: 0,
+    ramQuantity: 1, cpuFreq: 0, gpuQuantity: 1,
     gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null,
   })
 
@@ -150,12 +150,10 @@ export default function Calculator({ cpus, gpus, rams }: Props) {
           </div>
           <SearchableSelect
             options={availableCPUs} value={state.selectedCPU}
-            anyLabel={t('any')}
             onChange={(id) => setState((p) => {
-              if (id === null) return { ...p, selectedCPU: null, cpuFreq: 0 }
               const cpu = cpus.find((c) => c.id === id)
               const maxCh = cpu?.max_memory_channels ?? 2
-              return { ...p, selectedCPU: id, cpuFreq: cpu?.frequency ?? 0, ramQuantity: Math.min(p.ramQuantity || 0, maxCh * 2) }
+              return { ...p, selectedCPU: id, cpuFreq: cpu?.frequency ?? 0, ramQuantity: Math.min(p.ramQuantity || 1, maxCh * 2) }
             })}
             placeholder={t('select_cpu')} getLabel={(cpu) => cpu.part_name} noResultsText={t('no_results')}
           />
@@ -196,11 +194,10 @@ export default function Calculator({ cpus, gpus, rams }: Props) {
           </div>
           <SearchableSelect
             options={availableGPUs} value={state.selectedGPU}
-            anyLabel={t('any')}
             onChange={(id) => setState((p) => {
-              if (id === null) return { ...p, selectedGPU: null, gpuQuantity: 0, gpuCoreFreq: 0, gpuMemFreq: 0 }
               const gpu = gpus.find((g) => g.id === id)
-              return { ...p, selectedGPU: id, gpuQuantity: 0, gpuCoreFreq: gpu?.base_core_clock_freq ?? 0, gpuMemFreq: gpu?.base_mem_clock_freq ?? 0 }
+              const qty = gpu && supportsSli(gpu) ? p.gpuQuantity : 1
+              return { ...p, selectedGPU: id, gpuQuantity: qty, gpuCoreFreq: gpu?.base_core_clock_freq ?? 0, gpuMemFreq: gpu?.base_mem_clock_freq ?? 0 }
             })}
             placeholder={t('select_gpu')} getLabel={(gpu) => `${gpu.manufacturer} ${gpu.part_name}`} noResultsText={t('no_results')}
           />
@@ -267,11 +264,7 @@ export default function Calculator({ cpus, gpus, rams }: Props) {
           </div>
           <SearchableSelect
             options={availableRAMs} value={state.selectedRAM}
-            anyLabel={t('any')}
-            onChange={(id) => setState((p) => {
-              if (id === null) return { ...p, selectedRAM: null, ramQuantity: 0, effectiveRamFreq: null }
-              return { ...p, selectedRAM: id, ramQuantity: 0, effectiveRamFreq: null }
-            })}
+            onChange={(id) => setState((p) => ({ ...p, selectedRAM: id, effectiveRamFreq: null }))}
             placeholder={t('select_ram')}
             getLabel={(ram) => `${ram.manufacturer} ${ram.part_name} ${ram.total_size_gb}GB ${ram.frequency}MHz`}
             noResultsText={t('no_results')}
@@ -280,54 +273,52 @@ export default function Calculator({ cpus, gpus, rams }: Props) {
             <>
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-sm text-slate-600 dark:text-gray-400">{t('qty')}</span>
-                <button onClick={() => setState((p) => ({ ...p, ramQuantity: Math.max(0, (p.ramQuantity || 0) - 1) }))}
+                <button onClick={() => setState((p) => ({ ...p, ramQuantity: Math.max(1, (p.ramQuantity || 1) - 1) }))}
                   className="w-8 h-8 rounded-lg border border-slate-300 dark:border-gray-600 flex items-center justify-center text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
                 >−</button>
-                <span className="w-6 text-center font-semibold text-slate-900 dark:text-gray-100">{state.ramQuantity || 0}</span>
-                <button onClick={() => setState((p) => ({ ...p, ramQuantity: Math.min(maxRamQuantity, (p.ramQuantity || 0) + 1) }))}
+                <span className="w-6 text-center font-semibold text-slate-900 dark:text-gray-100">{state.ramQuantity || 1}</span>
+                <button onClick={() => setState((p) => ({ ...p, ramQuantity: Math.min(maxRamQuantity, (p.ramQuantity || 1) + 1) }))}
                   className="w-8 h-8 rounded-lg border border-slate-300 dark:border-gray-600 flex items-center justify-center text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
                 >+</button>
               </div>
-              {state.ramQuantity > 0 && (
-                <div className="p-4 bg-purple-50 dark:bg-purple-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
-                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">{t('total')}</span><span className="font-semibold">{selectedRAM.total_size_gb * state.ramQuantity} {t('gb')} ({state.ramQuantity}×{selectedRAM.total_size_gb}GB)</span></div>
-                  <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">{t('frequency_rated')}</span><span className="font-semibold">{selectedRAM.frequency} {t('mhz')}</span></div>
-                  {(() => {
-                    const cpuDef = selectedCPU?.default_memory_speed ?? selectedRAM.frequency
-                    const defFreq = Math.min(selectedRAM.frequency, cpuDef)
-                    const xmpFreq = selectedRAM.frequency
-                    const maxFreq = selectedRAM.max_speed ?? xmpFreq
-                    const curVal = state.effectiveRamFreq ?? defFreq
-                    const isCustom = state.effectiveRamFreq !== null
-                    const setFreq = (freq: number | null) => setState((p) => ({ ...p, effectiveRamFreq: freq }))
+              <div className="p-4 bg-purple-50 dark:bg-purple-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
+                <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">{t('total')}</span><span className="font-semibold">{selectedRAM.total_size_gb * state.ramQuantity} {t('gb')} ({state.ramQuantity}×{selectedRAM.total_size_gb}GB)</span></div>
+                <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">{t('frequency_rated')}</span><span className="font-semibold">{selectedRAM.frequency} {t('mhz')}</span></div>
+                {(() => {
+                  const cpuDef = selectedCPU?.default_memory_speed ?? selectedRAM.frequency
+                  const defFreq = Math.min(selectedRAM.frequency, cpuDef)
+                  const xmpFreq = selectedRAM.frequency
+                  const maxFreq = selectedRAM.max_speed ?? xmpFreq
+                  const curVal = state.effectiveRamFreq ?? defFreq
+                  const isCustom = state.effectiveRamFreq !== null
+                  const setFreq = (freq: number | null) => setState((p) => ({ ...p, effectiveRamFreq: freq }))
 
-                    return (
-                      <>
-                        <div className="flex justify-between items-center">
-                          <span className="text-slate-600 dark:text-gray-400">{t('frequency_bios')}</span>
-                          <div className="relative">
-                            <input type="number" min={defFreq} max={maxFreq} step={100} value={curVal}
-                              onChange={(e) => { const v = e.target.value ? Math.min(Math.max(Number(e.target.value), defFreq), maxFreq) : defFreq; setFreq(v) }}
-                              className="w-24 p-1 pr-9 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
-                          </div>
+                  return (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600 dark:text-gray-400">{t('frequency_bios')}</span>
+                        <div className="relative">
+                          <input type="number" min={defFreq} max={maxFreq} step={100} value={curVal}
+                            onChange={(e) => { const v = e.target.value ? Math.min(Math.max(Number(e.target.value), defFreq), maxFreq) : defFreq; setFreq(v) }}
+                            className="w-24 p-1 pr-9 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
                         </div>
-                        <div className="flex gap-1.5 mt-1.5">
-                          <button type="button" onClick={() => setFreq(null)}
-                            className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', !isCustom && curVal === defFreq ? 'bg-purple-200 dark:bg-purple-700 text-purple-800 dark:text-purple-200' : 'bg-white dark:bg-gray-800/60 text-slate-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700')}
-                          >{t('default')}</button>
-                          <button type="button" onClick={() => setFreq(xmpFreq)}
-                            className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', isCustom && curVal === xmpFreq ? 'bg-purple-200 dark:bg-purple-700 text-purple-800 dark:text-purple-200' : 'bg-white dark:bg-gray-800/60 text-slate-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700')}
-                          >{t('xmp')}</button>
-                        </div>
-                        {isCustom && curVal !== xmpFreq && <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/50 p-1.5 rounded mt-1">{t('xmp_disabled', String(curVal), String(xmpFreq))}</div>}
-                        {!isCustom && xmpFreq > cpuDef && <div className="text-xs text-slate-400 dark:text-gray-500 bg-white dark:bg-gray-800/50 p-1.5 rounded mt-1">{t('capped', String(defFreq), String(xmpFreq))}</div>}
-                      </>
-                    )
-                  })()}
-                </div>
-              )}
+                      </div>
+                      <div className="flex gap-1.5 mt-1.5">
+                        <button type="button" onClick={() => setFreq(null)}
+                          className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', !isCustom && curVal === defFreq ? 'bg-purple-200 dark:bg-purple-700 text-purple-800 dark:text-purple-200' : 'bg-white dark:bg-gray-800/60 text-slate-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700')}
+                        >{t('default')}</button>
+                        <button type="button" onClick={() => setFreq(xmpFreq)}
+                          className={clsx('flex-1 py-1 rounded text-xs font-medium transition-colors', isCustom && curVal === xmpFreq ? 'bg-purple-200 dark:bg-purple-700 text-purple-800 dark:text-purple-200' : 'bg-white dark:bg-gray-800/60 text-slate-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700')}
+                        >{t('xmp')}</button>
+                      </div>
+                      {isCustom && curVal !== xmpFreq && <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/50 p-1.5 rounded mt-1">{t('xmp_disabled', String(curVal), String(xmpFreq))}</div>}
+                      {!isCustom && xmpFreq > cpuDef && <div className="text-xs text-slate-400 dark:text-gray-500 bg-white dark:bg-gray-800/50 p-1.5 rounded mt-1">{t('capped', String(defFreq), String(xmpFreq))}</div>}
+                    </>
+                  )
+                })()}
+              </div>
             </>
           )}
         </div>
@@ -374,7 +365,7 @@ export default function Calculator({ cpus, gpus, rams }: Props) {
               </div>
             </div>
             <div className="flex justify-center">
-              <button onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 0, cpuFreq: 0, gpuQuantity: 0, gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null })}
+              <button onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, cpuFreq: 0, gpuQuantity: 1, gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null })}
                 className="px-5 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-sm text-slate-300 hover:text-white transition-colors"
               >{t('reset')}</button>
             </div>
