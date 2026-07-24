@@ -422,21 +422,21 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
                       <Cpu className="h-4 w-4 text-blue-500 shrink-0" />
                       <div>
                         <div className="font-medium text-slate-800 dark:text-gray-100">{r.cpu.part_name}</div>
-                        <div className="text-xs text-slate-400"> {formatNumber(r.cpuScore)} {t('bm_pts')}</div>
+                        <div className="text-xs text-slate-400">${formatNumber(r.cpu.price)} | {formatNumber(r.cpuScore)} {t('bm_pts')}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Gpu className="h-4 w-4 text-green-500 shrink-0" />
                       <div>
                         <div className="font-medium text-slate-800 dark:text-gray-100">{r.gpu.part_name}{r.gpuQty > 1 ? ' x' + r.gpuQty : ''}</div>
-                        <div className="text-xs text-slate-400"> {formatNumber(r.gpuScore)} {t('bm_pts')}</div>
+                        <div className="text-xs text-slate-400">${formatNumber(r.gpu.price * r.gpuQty)} | {formatNumber(r.gpuScore)} {t('bm_pts')}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <MemoryStick className="h-4 w-4 text-purple-500 shrink-0" />
                       <div>
                         <div className="font-medium text-slate-800 dark:text-gray-100">{r.ram.part_name} x{r.ramQty}</div>
-                        <div className="text-xs text-slate-400"> {r.ram.total_size_gb * r.ramQty}GB</div>
+                        <div className="text-xs text-slate-400">${formatNumber(r.ram.price * r.ramQty)} | {r.ram.total_size_gb * r.ramQty}GB</div>
                       </div>
                     </div>
                     {isFull(r) && (
@@ -445,35 +445,35 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
                           <Layers className="h-4 w-4 text-orange-500 shrink-0" />
                           <div>
                             <div className="font-medium text-slate-800 dark:text-gray-100">{r.motherboard.part_name}</div>
-                            <div className="text-xs text-slate-400"></div>
+                            <div className="text-xs text-slate-400">${formatNumber(r.motherboard.price)} | {r.motherboard.motherboard_size}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <Fan className="h-4 w-4 text-cyan-500 shrink-0" />
                           <div>
                             <div className="font-medium text-slate-800 dark:text-gray-100">{r.cooler.part_name}</div>
-                            <div className="text-xs text-slate-400"></div>
+                            <div className="text-xs text-slate-400">${formatNumber(r.cooler.price)}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <Zap className="h-4 w-4 text-yellow-500 shrink-0" />
                           <div>
                             <div className="font-medium text-slate-800 dark:text-gray-100">{r.psu.part_name}</div>
-                            <div className="text-xs text-slate-400"> {r.psu.wattage}W</div>
+                            <div className="text-xs text-slate-400">${formatNumber(r.psu.price)} | {r.psu.wattage}W</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <HardDrive className="h-4 w-4 text-cyan-500 shrink-0" />
                           <div>
                             <div className="font-medium text-slate-800 dark:text-gray-100">{r.storage.part_name}</div>
-                            <div className="text-xs text-slate-400"> {r.storage.size_gb}GB</div>
+                            <div className="text-xs text-slate-400">${formatNumber(r.storage.price)} | {r.storage.size_gb}GB</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <Box className="h-4 w-4 text-gray-500 shrink-0" />
                           <div>
                             <div className="font-medium text-slate-800 dark:text-gray-100">{r.case.part_name}</div>
-                            <div className="text-xs text-slate-400"></div>
+                            <div className="text-xs text-slate-400">${formatNumber(r.case.price)}</div>
                           </div>
                         </div>
                       </>
