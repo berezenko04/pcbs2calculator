@@ -361,5 +361,5 @@ export async function POST(req: NextRequest) {
   }
 
   found.sort((a, b) => b.totalScore - a.totalScore)
-  return NextResponse.json({ builds: selectDiverseBuilds(found, 10) })
+  return NextResponse.json({ builds: selectDiverseBuilds(found, 5) })
 }
