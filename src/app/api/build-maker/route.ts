@@ -94,12 +94,25 @@ function getTotalTdp(cpu: CPU, gpu: GPU, gpuQty: number): number {
   return (Number(cpu.wattage) || 0) + (Number(gpu.wattage) || 0) * gpuQty + 100
 }
 
+function isLocked(
+  componentLevel: number,
+  componentPercent: number | boolean | undefined | null,
+  userLevel: number,
+  userPercent: number,
+): boolean {
+  if (componentLevel < userLevel) return false
+  if (componentLevel > userLevel) return true
+  if (componentPercent === true || componentPercent == null) return false
+  return userPercent < Number(componentPercent)
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const {
     budget = 0, targetScore = 0, socket = '', cpuBrand = '', gpuBrand = '',
     useSli = false, cpuOc = false, gpuOc = false, minRamGb = 0,
     moboSize = '', storageType = '',
+    level = 0, levelPercent = 0, levelSandbox = false,
   } = body
 
   if (budget <= 0) return NextResponse.json({ builds: [] })
@@ -126,11 +139,16 @@ export async function POST(req: NextRequest) {
   const cases = caseRows as unknown as Case[]
   const coolers = coolerRows as unknown as Cooler[]
 
+  const lvlFilter = level > 0 && !levelSandbox
+    ? (lvl: number, pct: number | boolean | undefined | null) => isLocked(lvl, pct, level, levelPercent)
+    : () => false
+
   const cpuCandidates = cpus.filter(c => {
     if (socket && c.cpu_socket !== socket) return false
     if (cpuBrand && c.manufacturer !== cpuBrand) return false
     if (Number(c.price) > avail * 0.35) return false
     if (cpuOc && !c.can_overclock) return false
+    if (lvlFilter(c.level, c.percent_through)) return false
     return true
   })
 
@@ -138,12 +156,14 @@ export async function POST(req: NextRequest) {
     if (gpuBrand && g.manufacturer !== gpuBrand) return false
     if (useSli && !supportsSli(g)) return false
     if (Number(g.price) > avail * 0.40) return false
+    if (lvlFilter(g.level, g.percent_through)) return false
     return true
   })
 
   const ramCandidates = rams.filter(r => {
     if (r.total_size_gb < minRamGb) return false
     if (Number(r.price) * 2 > avail * 0.10) return false
+    if (lvlFilter(r.level, r.percent_through)) return false
     return true
   })
 
@@ -152,17 +172,31 @@ export async function POST(req: NextRequest) {
     if (moboSize && mb.motherboard_size !== moboSize) return false
     if (Number(mb.price) > avail * 0.18) return false
     if (cpuOc && !mb.can_overclock) return false
+    if (lvlFilter(mb.level, mb.percent_through)) return false
     return true
   })
 
-  const psuCandidates = psus.filter(p => Number(p.price) > 0 && Number(p.price) <= avail * 0.12)
+  const psuCandidates = psus.filter(p => {
+    if (Number(p.price) <= 0 || Number(p.price) > avail * 0.12) return false
+    if (lvlFilter(p.level, p.percent_through)) return false
+    return true
+  })
   const storageCandidates = storageDrives.filter(s => {
     if (storageType && s.type !== storageType) return false
     if (Number(s.price) > avail * 0.08) return false
+    if (lvlFilter(s.level, s.percent_through)) return false
     return true
   })
-  const caseCandidates = cases.filter(c => Number(c.price) > 0 && Number(c.price) <= avail * 0.12)
-  const coolerCandidates = coolers.filter(cl => Number(cl.price) > 0 && Number(cl.price) <= avail * 0.08)
+  const caseCandidates = cases.filter(c => {
+    if (Number(c.price) <= 0 || Number(c.price) > avail * 0.12) return false
+    if (lvlFilter(c.level, c.percent_through)) return false
+    return true
+  })
+  const coolerCandidates = coolers.filter(cl => {
+    if (Number(cl.price) <= 0 || Number(cl.price) > avail * 0.08) return false
+    if (lvlFilter(cl.level, cl.percent_through)) return false
+    return true
+  })
 
   const gpuQty = useSli ? 2 : 1
   const ramQty = 2

@@ -70,11 +70,6 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
           </div>
           <div className="flex items-center gap-2">
             <LangSwitcher />
-            {levelSettings && (
-              <button onClick={onOpenSettings} className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all" title={t('change_level')}>
-                <Settings className="h-5 w-5" />
-              </button>
-            )}
             <button
               onClick={() => setDarkMode((p) => !p)}
               className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all"
@@ -82,6 +77,11 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
             >
               {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
+            {levelSettings && (
+              <button onClick={onOpenSettings} className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all" title={t('change_level')}>
+                <Settings className="h-5 w-5" />
+              </button>
+            )}
           </div>
         </div>
 

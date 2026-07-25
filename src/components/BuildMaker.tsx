@@ -3,8 +3,8 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Wrench, Cpu, Gpu, MemoryStick, TrendingUp, Search, DollarSign, Target, Sliders, Info, Layers, HardDrive, Box, Zap, Fan } from 'lucide-react'
 import { useLang } from '@/lib/i18n/context'
-import { estimateBuildScore, formatNumber, supportsSli } from '@/lib/calculator'
-import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler } from '@/lib/types'
+import { estimateBuildScore, formatNumber, supportsSli, isLocked } from '@/lib/calculator'
+import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler, LevelSettings } from '@/lib/types'
 
 const SOCKETS = ['AM4', 'LGA 1151 (Coffee Lake)', 'LGA 1151 (Kaby Lake)', 'LGA 1151 (Skylake)', 'LGA 1200', 'LGA 2066', 'TR4', 'sTRX4'] as const
 const RAM_SIZES = [8, 16, 32]
@@ -53,9 +53,10 @@ interface Props {
   storageDrives: StorageDrive[]
   cases: Case[]
   coolers: Cooler[]
+  levelSettings: LevelSettings | null
 }
 
-export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, storageDrives, cases, coolers }: Props) {
+export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, storageDrives, cases, coolers, levelSettings }: Props) {
   const { t } = useLang()
 
   const [mode, setMode] = useState<'simple' | 'full'>('simple')
@@ -83,21 +84,28 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
     const available = budget - remaining
     if (available <= 0) return
 
+    const levelFilter = levelSettings && !levelSettings.isSandbox
+      ? (lvl: number, pct: number | boolean | undefined | null) => isLocked(lvl, pct, levelSettings.level, levelSettings.percent)
+      : () => false
+
     const cpuCandidates = cpus.filter((c) => {
       if (c.price > available * 0.6) return false
       if (cpuOc && !c.can_overclock) return false
+      if (levelFilter(c.level, c.percent_through)) return false
       return true
     })
 
     const gpuCandidates = gpus.filter((g) => {
       if (useSli && !supportsSli(g)) return false
       if (g.price > available * 0.6) return false
+      if (levelFilter(g.level, g.percent_through)) return false
       return true
     })
 
     const ramCandidates = rams.filter((r) => {
       if (r.total_size_gb < minRamGb) return false
       if (r.price > available * 0.2) return false
+      if (levelFilter(r.level, r.percent_through)) return false
       return true
     })
 
@@ -163,6 +171,9 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         body: JSON.stringify({
           budget, targetScore, socket, cpuBrand, gpuBrand,
           useSli, cpuOc, gpuOc, minRamGb, moboSize, storageType,
+          level: levelSettings?.level ?? 0,
+          levelPercent: levelSettings?.percent ?? 0,
+          levelSandbox: levelSettings?.isSandbox ?? false,
         }),
       })
       const data = await res.json()
