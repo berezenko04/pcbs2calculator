@@ -86,7 +86,12 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
   const availableBudget = mode === 'full' ? budget : budget - remaining
 
   const storageTypes = useMemo(() => [...new Set(storageDrives.map(s => s.type).filter(Boolean))], [storageDrives]).sort()
-  const storageSizes = useMemo(() => [...new Set(storageDrives.map(s => s.size_gb).filter(Boolean))].sort((a, b) => a - b), [storageDrives])
+  const storageSizes = useMemo(() => {
+    const seen = new Set<string>()
+    return [...new Set(storageDrives.map(s => s.size_gb).filter(Boolean))]
+      .sort((a, b) => a - b)
+      .filter(v => { const f = formatSizeGb(v); if (seen.has(f)) return false; seen.add(f); return true })
+  }, [storageDrives])
   const ramSizes = useMemo(() => {
     const sizes = new Set(rams.map(r => r.total_size_gb).filter(Boolean))
     sizes.add(64)
