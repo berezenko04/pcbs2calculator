@@ -246,9 +246,8 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
   }
 
   const doSearch = useCallback(async () => {
-    const available = mode === 'full' ? budget : budget - remaining
-    if (available <= 0) {
-      setBudgetError(mode === 'full' ? t('bm_enter_budget') : t('bm_enter_budget_or_remaining'))
+    if (budget <= 0) {
+      setBudgetError(t('bm_enter_budget'))
       setTimeout(() => setBudgetError(''), 2500)
       return
     }
