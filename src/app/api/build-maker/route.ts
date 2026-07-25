@@ -233,7 +233,11 @@ export async function POST(req: NextRequest) {
   const cpuCount = Math.min(cpuCandidates.length, 8)
   const MAX_PER_CPU = Math.ceil(MAX_TOTAL / cpuCount)
 
-  for (const cpu of cpuCandidates) {
+  const cpuIter = [...cpuCandidates].sort(() => Math.random() - 0.5)
+  const gpuIter = [...gpuCandidates].sort(() => Math.random() - 0.5)
+  const ramIter = [...ramCandidates].sort(() => Math.random() - 0.5)
+
+  for (const cpu of cpuIter) {
     if (found.length >= MAX_TOTAL) break
     let buildsForCpu = 0
     const cpuSocket = cpu.cpu_socket || ''
@@ -242,12 +246,12 @@ export async function POST(req: NextRequest) {
     const compatCoolers = coolersBySocket[cpuSocket] || []
     if (compatCoolers.length === 0) continue
 
-    for (const gpu of gpuCandidates) {
+    for (const gpu of gpuIter) {
       if (buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
       let buildsForGpu = 0
       const totalTdp = getTotalTdp(cpu, gpu, gpuQty)
 
-      for (const ram of ramCandidates) {
+      for (const ram of ramIter) {
         if (buildsForGpu >= 3 || buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
         const coreKey = `${cpu.id}|${gpu.id}|${ram.id}`
         if (seen.has(coreKey)) continue
@@ -272,12 +276,10 @@ export async function POST(req: NextRequest) {
           const compatCases = casesBySize[mbSize] || []
           if (compatCases.length === 0) continue
 
-          const comboIdx = Math.abs((cpu.id + '|' + gpu.id + '|' + ram.id + '|' + mb.id).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0))
-
           let cooler: Cooler | null = null
           const affordableCoolers = compatCoolers.filter(cl => Number(cl.price) <= rem)
           if (affordableCoolers.length === 0) continue
-          const coolerIdx = Math.min(comboIdx % affordableCoolers.length, affordableCoolers.length - 1)
+          const coolerIdx = Math.floor(Math.random() * affordableCoolers.length)
           cooler = affordableCoolers[coolerIdx]
           rem -= Number(cooler.price)
 
@@ -285,7 +287,7 @@ export async function POST(req: NextRequest) {
           const psuMaxWatt = Math.max(totalTdp * 1.5, totalTdp + 300)
           const affordablePsus = psusSorted.filter(p => Number(p.wattage) >= totalTdp && Number(p.wattage) <= psuMaxWatt && Number(p.price) <= rem)
           if (affordablePsus.length === 0) continue
-          const psuIdx = Math.min((comboIdx + 1) % affordablePsus.length, affordablePsus.length - 1)
+          const psuIdx = Math.floor(Math.random() * affordablePsus.length)
           psu = affordablePsus[psuIdx]
           rem -= Number(psu.price)
 
@@ -298,14 +300,14 @@ export async function POST(req: NextRequest) {
             return true
           })
           if (compatCasesFiltered.length === 0) continue
-          const caseIdx = Math.min((comboIdx + 2) % compatCasesFiltered.length, compatCasesFiltered.length - 1)
+          const caseIdx = Math.floor(Math.random() * compatCasesFiltered.length)
           caseItem = compatCasesFiltered[caseIdx]
           rem -= Number(caseItem.price)
 
           let storage: StorageDrive | null = null
           const affordableStorage = storageSorted.filter(s => Number(s.price) <= rem)
           if (affordableStorage.length === 0) continue
-          const storageIdx = Math.min((comboIdx + 3) % affordableStorage.length, affordableStorage.length - 1)
+          const storageIdx = Math.floor(Math.random() * affordableStorage.length)
           storage = affordableStorage[storageIdx]
 
           const totalPrice = coreTotal + Number(cooler.price) + Number(psu.price) + Number(caseItem.price) + Number(storage.price)
