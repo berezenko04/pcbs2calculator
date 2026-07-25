@@ -148,32 +148,30 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
 
     function selectDiverseBuilds(builds: BuildResultSimple[], maxCount: number): BuildResultSimple[] {
       if (builds.length <= 1) return builds.slice(0, maxCount)
-      const byPair = new Map<string, BuildResultSimple[]>()
-      for (const b of builds) {
-        const key = b.cpu.id + '|' + b.gpu.id
-        if (!byPair.has(key)) byPair.set(key, [])
-        if (byPair.get(key)!.length < 2) byPair.get(key)!.push(b)
-      }
-      const candidates = [...byPair.values()].flat()
-      candidates.sort((a, b) => b.totalScore - a.totalScore)
+      const sorted = [...builds].sort((a, b) => b.totalScore - a.totalScore)
+      const selected = [sorted[0]]
+      const usedCpu = new Set([sorted[0].cpu.id])
+      const usedGpu = new Set([sorted[0].gpu.id])
 
-      const selected = [candidates[0]]
-      for (let i = 1; i < candidates.length && selected.length < maxCount; i++) {
-        const b = candidates[i]
+      for (let i = 1; i < sorted.length && selected.length < maxCount; i++) {
+        const b = sorted[i]
+        if (usedCpu.has(b.cpu.id) || usedGpu.has(b.gpu.id)) continue
         let ok = true
         for (const s of selected) {
           let diff = 0
           if (b.cpu.id !== s.cpu.id) diff++
           if (b.gpu.id !== s.gpu.id) diff++
           if (b.ram.id !== s.ram.id) diff++
-          const hasCpuOrGpuDiff = b.cpu.id !== s.cpu.id || b.gpu.id !== s.gpu.id
-          if (!hasCpuOrGpuDiff || diff < 2) { ok = false; break }
+          if (diff < 2) { ok = false; break }
         }
-        if (ok) selected.push(b)
+        if (ok) {
+          selected.push(b)
+          usedCpu.add(b.cpu.id)
+          usedGpu.add(b.gpu.id)
+        }
       }
       if (selected.length < maxCount) {
-        const allSorted = [...builds].sort((a, b) => b.totalScore - a.totalScore)
-        for (const b of allSorted) {
+        for (const b of sorted) {
           if (selected.length >= maxCount) break
           if (selected.some(s => s === b)) continue
           selected.push(b)
