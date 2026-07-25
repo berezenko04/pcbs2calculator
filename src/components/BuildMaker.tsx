@@ -200,7 +200,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
       console.error(e)
     }
     setSearching(false)
-  }, [mode, budget, remaining, targetScore, socket, cpuBrand, gpuBrand, useSli, cpuOc, gpuOc, minRamGb, moboSize, storageType, cpus, gpus, rams])
+  }, [mode, budget, remaining, targetScore, socket, cpuBrand, gpuBrand, useSli, cpuOc, gpuOc, minRamGb, moboSize, storageType, cpus, gpus, rams, levelSettings])
 
   // UI render below
 
@@ -233,9 +233,10 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
           </label>
           <input
             type="number"
+            min={0}
             value={budget}
             onChange={(e) => setBudget(Number(e.target.value))}
-            className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
+            className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
 
@@ -247,9 +248,10 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
             </label>
             <input
               type="number"
+              min={0}
               value={remaining}
               onChange={(e) => setRemaining(Number(e.target.value))}
-              className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
+              className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <div className="text-xs text-slate-400 dark:text-gray-500 mt-1">
               {t('bm_available')}: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatNumber(availableBudget)}</span>
@@ -264,9 +266,10 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
           </label>
           <input
             type="number"
+            min={0}
             value={targetScore}
             onChange={(e) => setTargetScore(Number(e.target.value))}
-            className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
+            className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
 
@@ -323,20 +326,22 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
           </div>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-            <MemoryStick className="h-4 w-4 text-purple-500" />
-            {t('bm_min_ram')}
-          </label>
-          <select
-            value={minRamGb}
-            onChange={(e) => setMinRamGb(Number(e.target.value))}
-            className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
-          >
-            <option value="0">{t('bm_any')}</option>
-            {RAM_SIZES.map((s) => <option key={s} value={s}>{s} GB</option>)}
-          </select>
-        </div>
+        {mode === 'full' && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+              <MemoryStick className="h-4 w-4 text-purple-500" />
+              {t('bm_min_ram')}
+            </label>
+            <select
+              value={minRamGb}
+              onChange={(e) => setMinRamGb(Number(e.target.value))}
+              className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
+            >
+              <option value="0">{t('bm_any')}</option>
+              {RAM_SIZES.map((s) => <option key={s} value={s}>{s} GB</option>)}
+            </select>
+          </div>
+        )}
 
         {mode === 'full' && (
           <>
