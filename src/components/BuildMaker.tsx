@@ -233,7 +233,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         {mode === 'simple' && (
           <InputCard icon={<Info className="h-4 w-4 text-sky-500" />} label={t('bm_remaining')} value={remaining} onChange={setRemaining} min={0}>
             <div className="text-xs text-slate-400 dark:text-gray-500 mt-1">
-              {t('bm_available')}: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatNumber(availableBudget)}</span>
+              {t('bm_available')}: <span className="font-semibold text-emerald-600 dark:text-emerald-400">${formatNumber(availableBudget)}</span>
             </div>
           </InputCard>
         )}
