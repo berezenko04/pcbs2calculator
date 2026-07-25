@@ -48,7 +48,7 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:py-12 sm:px-6 lg:py-16 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:py-12 sm:px-6 lg:py-16 lg:px-8 transition-colors duration-300">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -123,7 +123,9 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
           </div>
         </div>
 
-        {children}
+        <div key={activeTab} className="animate-fadeIn">
+          {children}
+        </div>
       </div>
     </div>
   )
