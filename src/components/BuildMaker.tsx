@@ -131,8 +131,26 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
     }
     found.push(...bestBuilds.values())
 
-    found.sort((a, b) => b.totalScore - a.totalScore)
-    setResults(found.slice(0, 10))
+    function selectDiverseBuilds(builds: BuildResultSimple[], maxCount: number): BuildResultSimple[] {
+      if (builds.length <= 1) return builds.slice(0, maxCount)
+      const sorted = [...builds].sort((a, b) => b.totalScore - a.totalScore)
+      const selected = [sorted[0]]
+      for (let i = 1; i < sorted.length && selected.length < maxCount; i++) {
+        const b = sorted[i]
+        let ok = true
+        for (const s of selected) {
+          let diff = 0
+          if (b.cpu.id !== s.cpu.id) diff++
+          if (b.gpu.id !== s.gpu.id) diff++
+          if (b.ram.id !== s.ram.id) diff++
+          if (diff < 2) { ok = false; break }
+        }
+        if (ok) selected.push(b)
+      }
+      return selected
+    }
+
+    setResults(selectDiverseBuilds(found, 10))
     setSearched(true)
   }
 

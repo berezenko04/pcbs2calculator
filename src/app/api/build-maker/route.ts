@@ -285,6 +285,30 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  function selectDiverseBuilds(builds: any[], maxCount: number): any[] {
+    if (builds.length <= 1) return builds.slice(0, maxCount)
+    const sorted = [...builds].sort((a, b) => b.totalScore - a.totalScore)
+    const selected = [sorted[0]]
+    for (let i = 1; i < sorted.length && selected.length < maxCount; i++) {
+      const b = sorted[i]
+      let ok = true
+      for (const s of selected) {
+        let diff = 0
+        if (b.cpu.id !== s.cpu.id) diff++
+        if (b.gpu.id !== s.gpu.id) diff++
+        if (b.ram.id !== s.ram.id) diff++
+        if (b.motherboard?.id !== s.motherboard?.id) diff++
+        if (b.cooler?.id !== s.cooler?.id) diff++
+        if (b.psu?.id !== s.psu?.id) diff++
+        if (b.case?.id !== s.case?.id) diff++
+        if (b.storage?.id !== s.storage?.id) diff++
+        if (diff < 3) { ok = false; break }
+      }
+      if (ok) selected.push(b)
+    }
+    return selected
+  }
+
   found.sort((a, b) => b.totalScore - a.totalScore)
-  return NextResponse.json({ builds: found.slice(0, 10) })
+  return NextResponse.json({ builds: selectDiverseBuilds(found, 10) })
 }
