@@ -251,8 +251,10 @@ export async function POST(req: NextRequest) {
         const cpuPrice = Number(cpu.price)
         const gpuPrice = Number(gpu.price) * gpuQty
         const ramPrice = Number(ram.price) * ramQty
+        let buildsForMb = 0
 
         for (const mb of compatMbs) {
+          if (buildsForMb >= 2 || found.length >= 300) break
           const mbPrice = Number(mb.price)
           const coreTotal = cpuPrice + gpuPrice + ramPrice + mbPrice
           let rem = avail - coreTotal
@@ -317,6 +319,7 @@ export async function POST(req: NextRequest) {
             rank: score.rank,
             totalTdp: displayTdp,
           })
+          buildsForMb++
         }
       }
     }
