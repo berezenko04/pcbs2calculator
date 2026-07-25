@@ -404,8 +404,8 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
                     <div className="flex items-center gap-2 text-sm">
                       <MemoryStick className="h-4 w-4 text-purple-500 shrink-0" />
                       <div>
-                        <div className="font-medium text-slate-800 dark:text-gray-100">{r.ram.manufacturer} {r.ram.part_name} x{r.ramQty}</div>
-                        <div className="text-xs text-slate-400">{r.ram.total_size_gb * r.ramQty}GB {r.ram.frequency}MHz · ${formatNumber(r.ram.price * r.ramQty)}</div>
+                        <div className="font-medium text-slate-800 dark:text-gray-100">{r.ram.manufacturer} {r.ram.part_name} {r.ram.frequency}MHz x{r.ramQty}</div>
+                        <div className="text-xs text-slate-400">{r.ram.total_size_gb * r.ramQty}GB · ${formatNumber(r.ram.price * r.ramQty)}</div>
                       </div>
                     </div>
                     {isFull(r) && (
