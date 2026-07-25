@@ -234,25 +234,27 @@ export async function POST(req: NextRequest) {
   const cpuCount = Math.min(cpuCandidates.length, 8)
   const MAX_PER_CPU = Math.ceil(MAX_TOTAL / cpuCount)
 
-  const cpuIter = [...cpuCandidates].sort(() => Math.random() - 0.5)
-  const gpuIter = [...gpuCandidates].sort(() => Math.random() - 0.5)
-  const ramIter = [...ramCandidates].sort(() => Math.random() - 0.5)
+  const cpuValue = (c: CPU) => (Number(c.basic_cpu_score) || 0) / (Number(c.price) || 1)
+  const gpuValue = (g: GPU) => (Number(g.single_gpu_graphics_score) || 0) / (Number(g.price) || 1)
 
-  for (const cpu of cpuIter) {
+  const cpuSorted = [...cpuCandidates].sort((a, b) => cpuValue(b) - cpuValue(a))
+  const gpuSorted = [...gpuCandidates].sort((a, b) => gpuValue(b) - gpuValue(a))
+
+  for (const cpu of cpuSorted) {
     if (found.length >= MAX_TOTAL) break
     let buildsForCpu = 0
     const cpuSocket = cpu.cpu_socket || ''
-    const compatMbs = (mbBySocket[cpuSocket] || []).sort(() => Math.random() - 0.5)
+    const compatMbs = mbBySocket[cpuSocket] || []
     if (compatMbs.length === 0) continue
     const compatCoolers = coolersBySocket[cpuSocket] || []
     if (compatCoolers.length === 0) continue
 
-    for (const gpu of gpuIter) {
+    for (const gpu of gpuSorted) {
       if (buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
       let buildsForGpu = 0
       const totalTdp = getTotalTdp(cpu, gpu, gpuQty)
 
-      for (const ram of ramIter) {
+      for (const ram of ramCandidates) {
         if (buildsForGpu >= 3 || buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
         const coreKey = `${cpu.id}|${gpu.id}|${ram.id}`
         if (seen.has(coreKey)) continue
@@ -278,38 +280,35 @@ export async function POST(req: NextRequest) {
           if (compatCases.length === 0) continue
 
           let cooler: Cooler | null = null
-          const affordableCoolers = compatCoolers.filter(cl => Number(cl.price) <= rem)
-          if (affordableCoolers.length === 0) continue
-          const coolerIdx = Math.floor(Math.random() * affordableCoolers.length)
-          cooler = affordableCoolers[coolerIdx]
+          for (const cl of compatCoolers) {
+            if (Number(cl.price) <= rem) { cooler = cl; break }
+          }
+          if (!cooler) continue
           rem -= Number(cooler.price)
 
           let psu: PSU | null = null
           const psuMaxWatt = Math.max(totalTdp * 1.5, totalTdp + 300)
-          const affordablePsus = psusSorted.filter(p => Number(p.wattage) >= totalTdp && Number(p.wattage) <= psuMaxWatt && Number(p.price) <= rem)
-          if (affordablePsus.length === 0) continue
-          const psuIdx = Math.floor(Math.random() * affordablePsus.length)
-          psu = affordablePsus[psuIdx]
+          for (const p of psusSorted) {
+            if (Number(p.wattage) >= totalTdp && Number(p.wattage) <= psuMaxWatt && Number(p.price) <= rem) { psu = p; break }
+          }
+          if (!psu) continue
           rem -= Number(psu.price)
 
           let caseItem: Case | null = null
-          const compatCasesFiltered = compatCases.filter(c => {
-            if (Number(c.price) > rem) return false
-            if (psu.size && c.max_psu_length && parseInt(String(psu.size)) > Number(c.max_psu_length)) return false
-            if (cooler.type?.toLowerCase().includes('air') && cooler.height && c.max_cpu_fan_height && Number(cooler.height) > Number(c.max_cpu_fan_height)) return false
-            if (gpu.length && c.max_gpu_length && Number(gpu.length) > Number(c.max_gpu_length)) return false
-            return true
-          })
-          if (compatCasesFiltered.length === 0) continue
-          const caseIdx = Math.floor(Math.random() * compatCasesFiltered.length)
-          caseItem = compatCasesFiltered[caseIdx]
-          rem -= Number(caseItem.price)
+          for (const c of compatCases) {
+            if (Number(c.price) > rem) continue
+            if (psu.size && c.max_psu_length && parseInt(String(psu.size)) > Number(c.max_psu_length)) continue
+            if (cooler.type?.toLowerCase().includes('air') && cooler.height && c.max_cpu_fan_height && Number(cooler.height) > Number(c.max_cpu_fan_height)) continue
+            if (gpu.length && c.max_gpu_length && Number(gpu.length) > Number(c.max_gpu_length)) continue
+            caseItem = c; break
+          }
+          if (!caseItem) continue
 
           let storage: StorageDrive | null = null
-          const affordableStorage = storageSorted.filter(s => Number(s.price) <= rem)
-          if (affordableStorage.length === 0) continue
-          const storageIdx = Math.floor(Math.random() * affordableStorage.length)
-          storage = affordableStorage[storageIdx]
+          for (const s of storageSorted) {
+            if (Number(s.price) <= rem) { storage = s; break }
+          }
+          if (!storage) continue
 
           const totalPrice = coreTotal + Number(cooler.price) + Number(psu.price) + Number(caseItem.price) + Number(storage.price)
           const displayTdp = Number(cpu.wattage) + Number(gpu.wattage) * gpuQty
@@ -341,13 +340,19 @@ export async function POST(req: NextRequest) {
 
   function selectDiverseBuilds(builds: any[], maxCount: number): any[] {
     if (builds.length <= 1) return builds.slice(0, maxCount)
-    const sorted = [...builds].sort((a, b) => b.totalScore - a.totalScore)
-    const selected = [sorted[0]]
-    const usedCpu = new Set([sorted[0].cpu.id])
-    const usedGpu = new Set([sorted[0].gpu.id])
+    const byPair = new Map<string, any[]>()
+    for (const b of builds) {
+      const key = b.cpu.id + '|' + b.gpu.id
+      if (!byPair.has(key)) { byPair.set(key, [b]) }
+    }
+    const candidates = [...byPair.values()].map(arr => arr[0])
+    candidates.sort((a, b) => b.totalScore - a.totalScore)
+    const selected = [candidates[0]]
+    const usedCpu = new Set([candidates[0].cpu.id])
+    const usedGpu = new Set([candidates[0].gpu.id])
 
-    for (let i = 1; i < sorted.length && selected.length < maxCount; i++) {
-      const b = sorted[i]
+    for (let i = 1; i < candidates.length && selected.length < maxCount; i++) {
+      const b = candidates[i]
       if (usedCpu.has(b.cpu.id) || usedGpu.has(b.gpu.id)) continue
       let ok = true
       for (const s of selected) {
@@ -369,7 +374,8 @@ export async function POST(req: NextRequest) {
       }
     }
     if (selected.length < maxCount) {
-      for (const b of sorted) {
+      const allSorted = [...builds].sort((a, b) => b.totalScore - a.totalScore)
+      for (const b of allSorted) {
         if (selected.length >= maxCount) break
         if (selected.some(s => s === b)) continue
         selected.push(b)
@@ -378,6 +384,5 @@ export async function POST(req: NextRequest) {
     return selected
   }
 
-  found.sort((a, b) => b.totalScore - a.totalScore)
   return NextResponse.json({ builds: selectDiverseBuilds(found, 5) })
 }
