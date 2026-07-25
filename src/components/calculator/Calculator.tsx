@@ -1,71 +1,28 @@
 'use client'
 
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import clsx from 'clsx'
-import { Calculator as CalcIcon, Cpu, Gpu, MemoryStick, TrendingUp, Settings } from 'lucide-react'
+import { Calculator as CalcIcon, Cpu, Gpu, MemoryStick, TrendingUp } from 'lucide-react'
 import { useLang } from '@/lib/i18n/context'
 import { calcCpuScore, calcGpuScore, calcTotalScore, getRank, supportsSli, isLocked, formatNumber } from '@/lib/calculator'
 import type { CPU, GPU, RAM, CalculatorState, LevelSettings, ScoreResult } from '@/lib/types'
 import Slider from '@/components/ui/Slider'
 import SearchableSelect from '@/components/ui/SearchableSelect'
-import LevelSettingsModal from '@/components/calculator/LevelSettingsModal'
 
 interface Props {
   cpus: CPU[]
   gpus: GPU[]
   rams: RAM[]
+  levelSettings: LevelSettings | null
 }
 
-export default function Calculator({ cpus, gpus, rams }: Props) {
+export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
   const { t } = useLang()
   const [state, setState] = useState<CalculatorState>({
     selectedCPU: null, selectedGPU: null, selectedRAM: null,
     ramQuantity: 1, cpuFreq: 0, gpuQuantity: 1,
     gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null,
   })
-
-  const initData = useMemo(() => {
-    const init: { levelSettings: LevelSettings | null; showSettings: boolean; draftLevel: number; draftPercent: number; draftSandbox: boolean } =
-      { levelSettings: null, showSettings: false, draftLevel: 1, draftPercent: 0, draftSandbox: false }
-    try {
-      const raw = localStorage.getItem('pcbs2_level')
-      if (raw) {
-        const parsed = JSON.parse(raw) as LevelSettings
-        if (typeof parsed.level === 'number' && typeof parsed.percent === 'number') {
-          init.levelSettings = parsed
-          init.draftLevel = parsed.level
-          init.draftPercent = parsed.percent
-          init.draftSandbox = parsed.isSandbox ?? false
-          return init
-        }
-      }
-    } catch {}
-    init.showSettings = true
-    return init
-  }, [])
-
-  const [levelSettings, setLevelSettings] = useState<LevelSettings | null>(initData.levelSettings)
-  const [showSettings, setShowSettings] = useState(initData.showSettings)
-  const [draftLevel, setDraftLevel] = useState(initData.draftLevel)
-  const [draftPercent, setDraftPercent] = useState(initData.draftPercent)
-  const [draftSandbox, setDraftSandbox] = useState(initData.draftSandbox)
-
-  const allLevels = [...cpus, ...gpus, ...rams].map((c) => Number(c.level)).filter((l) => !isNaN(l))
-  const maxLevel = allLevels.length > 0 ? Math.max(...allLevels) : 30
-
-  const saveSettings = useCallback((lvl: number, pct: number, sandbox: boolean) => {
-    const s: LevelSettings = { level: lvl, percent: pct, isSandbox: sandbox }
-    localStorage.setItem('pcbs2_level', JSON.stringify(s))
-    setLevelSettings(s)
-    setShowSettings(false)
-  }, [])
-
-  const openSettings = () => {
-    setDraftLevel(levelSettings?.level ?? 1)
-    setDraftPercent(levelSettings?.percent ?? 0)
-    setDraftSandbox(levelSettings?.isSandbox ?? false)
-    setShowSettings(true)
-  }
 
   const availableCPUs = levelSettings?.isSandbox ? cpus : levelSettings ? cpus.filter((c) => !isLocked(c.level, c.percent_through, levelSettings.level, levelSettings.percent)) : cpus
   const availableGPUs = levelSettings?.isSandbox ? gpus : levelSettings ? gpus.filter((g) => !isLocked(g.level, g.percent_through, levelSettings.level, levelSettings.percent)) : gpus
@@ -104,39 +61,6 @@ export default function Calculator({ cpus, gpus, rams }: Props) {
 
   return (
     <>
-      {showSettings && (
-        <LevelSettingsModal
-          initialLevel={draftLevel} initialPercent={draftPercent} initialSandbox={draftSandbox}
-          maxLevel={maxLevel} hasExistingSettings={!!levelSettings}
-          onClose={() => { if (levelSettings) setShowSettings(false) }}
-          onSave={(lv, pct, sandbox) => saveSettings(lv, pct, sandbox)}
-        />
-      )}
-
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-indigo-100 dark:bg-indigo-900 p-2.5 rounded-xl">
-              <CalcIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{t('title')}</h1>
-              <p className="text-sm text-slate-500 dark:text-gray-400">{t('subtitle')}</p>
-            </div>
-          </div>
-          {levelSettings && (
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:inline-flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-full text-xs font-medium">
-                <TrendingUp className="h-3.5 w-3.5" />
-                {levelSettings.isSandbox ? t('sandbox_mode') : t('level_badge', String(levelSettings.level), String(levelSettings.percent))}
-              </div>
-              <button onClick={openSettings} className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all" title={t('change_level')}>
-                <Settings className="h-5 w-5" />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
         {/* CPU Card */}

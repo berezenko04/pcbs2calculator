@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { LangProvider } from '@/lib/i18n/context'
 import AppShell, { type TabId } from '@/components/AppShell'
-import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler } from '@/lib/types'
+import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler, LevelSettings } from '@/lib/types'
 import Calculator from '@/components/calculator/Calculator'
 import BuildMaker from '@/components/BuildMaker'
+import LevelSettingsModal from '@/components/calculator/LevelSettingsModal'
 import { useLang } from '@/lib/i18n/context'
 
 function LoadingFallback() {
@@ -28,6 +29,49 @@ function HomeInner() {
   const [coolers, setCoolers] = useState<Cooler[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('calculator')
+
+  const initData = useMemo(() => {
+    const init: { levelSettings: LevelSettings | null; showSettings: boolean; draftLevel: number; draftPercent: number; draftSandbox: boolean } =
+      { levelSettings: null, showSettings: false, draftLevel: 1, draftPercent: 0, draftSandbox: false }
+    try {
+      const raw = localStorage.getItem('pcbs2_level')
+      if (raw) {
+        const parsed = JSON.parse(raw) as LevelSettings
+        if (typeof parsed.level === 'number' && typeof parsed.percent === 'number') {
+          init.levelSettings = parsed
+          init.draftLevel = parsed.level
+          init.draftPercent = parsed.percent
+          init.draftSandbox = parsed.isSandbox ?? false
+          return init
+        }
+      }
+    } catch {}
+    init.showSettings = true
+    return init
+  }, [])
+
+  const [levelSettings, setLevelSettings] = useState<LevelSettings | null>(initData.levelSettings)
+  const [showSettings, setShowSettings] = useState(initData.showSettings)
+  const [draftLevel, setDraftLevel] = useState(initData.draftLevel)
+  const [draftPercent, setDraftPercent] = useState(initData.draftPercent)
+  const [draftSandbox, setDraftSandbox] = useState(initData.draftSandbox)
+
+  const allLevels = [...cpus, ...gpus, ...rams].map((c) => Number(c.level)).filter((l) => !isNaN(l))
+  const maxLevel = allLevels.length > 0 ? Math.max(...allLevels) : 30
+
+  const saveSettings = useCallback((lvl: number, pct: number, sandbox: boolean) => {
+    const s: LevelSettings = { level: lvl, percent: pct, isSandbox: sandbox }
+    localStorage.setItem('pcbs2_level', JSON.stringify(s))
+    setLevelSettings(s)
+    setShowSettings(false)
+  }, [])
+
+  const openSettings = useCallback(() => {
+    setDraftLevel(levelSettings?.level ?? 1)
+    setDraftPercent(levelSettings?.percent ?? 0)
+    setDraftSandbox(levelSettings?.isSandbox ?? false)
+    setShowSettings(true)
+  }, [levelSettings])
 
   useEffect(() => {
     Promise.all([
@@ -55,10 +99,20 @@ function HomeInner() {
   if (loading) return <LoadingFallback />
 
   return (
-    <AppShell activeTab={activeTab} onTabChange={setActiveTab}>
-      {activeTab === 'calculator' && <Calculator cpus={cpus} gpus={gpus} rams={rams} />}
-      {activeTab === 'buildmaker' && <BuildMaker cpus={cpus} gpus={gpus} rams={rams} motherboards={motherboards} psus={psus} storageDrives={storageDrives} cases={cases} coolers={coolers} />}
-    </AppShell>
+    <>
+      {showSettings && (
+        <LevelSettingsModal
+          initialLevel={draftLevel} initialPercent={draftPercent} initialSandbox={draftSandbox}
+          maxLevel={maxLevel} hasExistingSettings={!!levelSettings}
+          onClose={() => { if (levelSettings) setShowSettings(false) }}
+          onSave={(lv, pct, sandbox) => saveSettings(lv, pct, sandbox)}
+        />
+      )}
+      <AppShell activeTab={activeTab} onTabChange={setActiveTab} levelSettings={levelSettings} onOpenSettings={openSettings}>
+        {activeTab === 'calculator' && <Calculator cpus={cpus} gpus={gpus} rams={rams} levelSettings={levelSettings} />}
+        {activeTab === 'buildmaker' && <BuildMaker cpus={cpus} gpus={gpus} rams={rams} motherboards={motherboards} psus={psus} storageDrives={storageDrives} cases={cases} coolers={coolers} />}
+      </AppShell>
+    </>
   )
 }
 

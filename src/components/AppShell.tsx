@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, ReactNode } from 'react'
-import { Calculator, Wrench, Moon, Sun, Star } from 'lucide-react'
+import { Calculator, Wrench, Moon, Sun, Star, TrendingUp, Settings } from 'lucide-react'
 import LangSwitcher from './LangSwitcher'
 import { useLang } from '@/lib/i18n/context'
+import type { LevelSettings } from '@/lib/types'
 
 export type TabId = 'calculator' | 'buildmaker'
 
@@ -11,9 +12,11 @@ interface Props {
   children: ReactNode
   activeTab: TabId
   onTabChange: (tab: TabId) => void
+  levelSettings: LevelSettings | null
+  onOpenSettings: () => void
 }
 
-export default function AppShell({ children, activeTab, onTabChange }: Props) {
+export default function AppShell({ children, activeTab, onTabChange, levelSettings, onOpenSettings }: Props) {
   const { t } = useLang()
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -76,6 +79,23 @@ export default function AppShell({ children, activeTab, onTabChange }: Props) {
               {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
           </div>
+        </div>
+
+        {/* Title */}
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{t('title')}</h1>
+          <p className="text-sm text-slate-500 dark:text-gray-400">{t('subtitle')}</p>
+          {levelSettings && (
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <div className="inline-flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-full text-xs font-medium">
+                <TrendingUp className="h-3.5 w-3.5" />
+                {levelSettings.isSandbox ? t('sandbox_mode') : t('level_badge', String(levelSettings.level), String(levelSettings.percent))}
+              </div>
+              <button onClick={onOpenSettings} className="p-2 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all" title={t('change_level')}>
+                <Settings className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
