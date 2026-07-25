@@ -87,11 +87,22 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
 
   const storageTypes = useMemo(() => [...new Set(storageDrives.map(s => s.type).filter(Boolean))], [storageDrives]).sort()
 
+  const cpuBrandOptions = useMemo(() => {
+    if (!socket) return ['AMD', 'Intel']
+    if (AMD_SOCKETS.has(socket)) return ['AMD']
+    if (INTEL_SOCKETS.has(socket)) return ['Intel']
+    return ['AMD', 'Intel']
+  }, [socket])
+
   const handleSocketChange = useCallback((v: string) => {
     setSocket(v)
-    if (v && AMD_SOCKETS.has(v) && cpuBrand === 'Intel') setCpuBrand('')
-    if (v && INTEL_SOCKETS.has(v) && cpuBrand === 'AMD') setCpuBrand('')
+    if (v && cpuBrand && ((AMD_SOCKETS.has(v) && cpuBrand === 'Intel') || (INTEL_SOCKETS.has(v) && cpuBrand === 'AMD'))) setCpuBrand('')
   }, [cpuBrand])
+
+  const handleCpuBrandChange = useCallback((v: string) => {
+    setCpuBrand(v)
+    if (v && socket && ((v === 'AMD' && INTEL_SOCKETS.has(socket)) || (v === 'Intel' && AMD_SOCKETS.has(socket)))) setSocket('')
+  }, [socket])
 
   const isFull = (r: BuildResult): r is BuildResultFull => 'motherboard' in r
 
@@ -274,7 +285,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         )}
 
         {mode === 'full' && (
-          <SelectCard icon={<Layers className="h-4 w-4 text-purple-500" />} label={t('bm_cpu_brand')} value={cpuBrand} onChange={setCpuBrand} options={['AMD', 'Intel']} anyLabel={t('bm_any')} />
+          <SelectCard icon={<Layers className="h-4 w-4 text-purple-500" />} label={t('bm_cpu_brand')} value={cpuBrand} onChange={handleCpuBrandChange} options={cpuBrandOptions} anyLabel={t('bm_any')} />
         )}
 
         {mode === 'full' && (
