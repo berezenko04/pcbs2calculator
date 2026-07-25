@@ -44,7 +44,7 @@ export default function SearchableSelect<T extends { id: string }>({ options, va
         onChange={(e) => { setSearch(e.target.value); setIsOpen(true) }}
         onFocus={() => { setIsOpen(true); setSearch('') }}
         placeholder={placeholder}
-        className="w-full p-2.5 pr-10 border border-slate-300 dark:border-gray-600 rounded-lg cursor-pointer bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
+        className="w-full p-2.5 pr-10 border border-slate-300 dark:border-gray-600 rounded-lg cursor-pointer bg-white dark:bg-gray-800 text-sm dark:text-gray-100 outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-shadow"
       />
       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-500 pointer-events-none" />
       {isOpen && (

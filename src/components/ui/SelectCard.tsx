@@ -23,7 +23,7 @@ export default function SelectCard({ icon, label, value, onChange, options, anyL
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full p-2.5 pr-10 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100 appearance-none cursor-pointer"
+          className="w-full p-2.5 pr-10 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100 appearance-none cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-shadow"
         >
           <option value="">{anyLabel}</option>
           {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
