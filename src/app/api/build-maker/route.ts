@@ -338,10 +338,18 @@ export async function POST(req: NextRequest) {
 
   function selectDiverseBuilds(builds: any[], maxCount: number): any[] {
     if (builds.length <= 1) return builds.slice(0, maxCount)
-    const sorted = [...builds].sort((a, b) => b.totalScore - a.totalScore)
-    const selected = [sorted[0]]
-    for (let i = 1; i < sorted.length && selected.length < maxCount; i++) {
-      const b = sorted[i]
+    const byPair = new Map<string, any[]>()
+    for (const b of builds) {
+      const key = b.cpu.id + '|' + b.gpu.id
+      if (!byPair.has(key)) byPair.set(key, [])
+      if (byPair.get(key)!.length < 2) byPair.get(key)!.push(b)
+    }
+    const candidates = [...byPair.values()].flat()
+    candidates.sort((a, b) => b.totalScore - a.totalScore)
+
+    const selected = [candidates[0]]
+    for (let i = 1; i < candidates.length && selected.length < maxCount; i++) {
+      const b = candidates[i]
       let ok = true
       for (const s of selected) {
         let diff = 0
@@ -353,9 +361,18 @@ export async function POST(req: NextRequest) {
         if (b.psu?.id !== s.psu?.id) diff++
         if (b.case?.id !== s.case?.id) diff++
         if (b.storage?.id !== s.storage?.id) diff++
-        if (diff < 3) { ok = false; break }
+        const hasCpuOrGpuDiff = b.cpu.id !== s.cpu.id || b.gpu.id !== s.gpu.id
+        if (!hasCpuOrGpuDiff || diff < 3) { ok = false; break }
       }
       if (ok) selected.push(b)
+    }
+    if (selected.length < maxCount) {
+      const allSorted = [...builds].sort((a, b) => b.totalScore - a.totalScore)
+      for (const b of allSorted) {
+        if (selected.length >= maxCount) break
+        if (selected.some(s => s === b)) continue
+        selected.push(b)
+      }
     }
     return selected
   }
