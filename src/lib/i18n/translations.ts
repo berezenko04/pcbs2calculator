@@ -100,6 +100,7 @@ const t: Record<Lang, Translations> = {
     'bm_full_build': 'Full Build',
     'bm_mobo_size': 'Motherboard Size',
     'bm_storage_type': 'Storage Type',
+    'bm_min_storage': 'Min. Storage',
     'bm_searching': 'Searching...',
   },
   ru: {
@@ -187,6 +188,7 @@ const t: Record<Lang, Translations> = {
     'bm_full_build': 'Полная сборка',
     'bm_mobo_size': 'Размер материнки',
     'bm_storage_type': 'Тип накопителя',
+    'bm_min_storage': 'Мин. диск',
     'bm_searching': 'Поиск...',
   },
   uk: {
@@ -253,6 +255,7 @@ const t: Record<Lang, Translations> = {
     'bm_full_build': 'Повна збірка',
     'bm_mobo_size': 'Розмір плати',
     'bm_storage_type': 'Тип накопичувача',
+    'bm_min_storage': 'Мін. диск',
     'bm_searching': 'Пошук...',
   },
   ko: {
@@ -319,6 +322,7 @@ const t: Record<Lang, Translations> = {
     'bm_full_build': '전체 조립',
     'bm_mobo_size': '메인보드 크기',
     'bm_storage_type': '저장소 유형',
+    'bm_min_storage': '최소 저장공간',
     'bm_searching': '검색 중...',
   },
   zh: {
@@ -385,6 +389,7 @@ const t: Record<Lang, Translations> = {
     'bm_full_build': '完整装机',
     'bm_mobo_size': '主板尺寸',
     'bm_storage_type': '存储类型',
+    'bm_min_storage': '最小存储',
     'bm_searching': '搜索中...',
   },
   de: {
@@ -451,6 +456,7 @@ const t: Record<Lang, Translations> = {
     'bm_full_build': 'Vollständiger Bau',
     'bm_mobo_size': 'Motherboard-Größe',
     'bm_storage_type': 'Speichertyp',
+    'bm_min_storage': 'Min. Speicher',
     'bm_searching': 'Suche...',
   },
   es: {
@@ -517,6 +523,7 @@ const t: Record<Lang, Translations> = {
     'bm_full_build': 'Montaje completo',
     'bm_mobo_size': 'Tamaño placa',
     'bm_storage_type': 'Tipo almacenamiento',
+    'bm_min_storage': 'Mín. almacen.',
     'bm_searching': 'Buscando...',
   },
   it: {
@@ -583,6 +590,7 @@ const t: Record<Lang, Translations> = {
     'bm_full_build': 'Montaggio completo',
     'bm_mobo_size': 'Dimensioni scheda',
     'bm_storage_type': 'Tipo archiviaz.',
+    'bm_min_storage': 'Min. archiv.',
     'bm_searching': 'Ricerca...',
   },
 }

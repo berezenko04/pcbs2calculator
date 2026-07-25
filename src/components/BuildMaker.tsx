@@ -76,6 +76,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
   const [cpuOc, setCpuOc] = useState(false)
   const [gpuOc, setGpuOc] = useState(false)
   const [minRamGb, setMinRamGb] = useState(0)
+  const [minStorageGb, setMinStorageGb] = useState(0)
   const [moboSize, setMoboSize] = useState('')
   const [storageType, setStorageType] = useState('')
   const [results, setResults] = useState<BuildResult[]>([])
@@ -85,6 +86,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
   const availableBudget = mode === 'full' ? budget : budget - remaining
 
   const storageTypes = useMemo(() => [...new Set(storageDrives.map(s => s.type).filter(Boolean))], [storageDrives]).sort()
+  const storageSizes = useMemo(() => [...new Set(storageDrives.map(s => s.size_gb).filter(Boolean))].sort((a, b) => a - b), [storageDrives])
   const ramSizes = useMemo(() => [...new Set(rams.map(r => r.total_size_gb).filter(Boolean))].sort((a, b) => a - b), [rams])
 
   const cpuBrandOptions = useMemo(() => {
@@ -213,7 +215,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           budget, targetScore, socket, cpuBrand, gpuBrand,
-          useSli, cpuOc, gpuOc, minRamGb, moboSize, storageType,
+          useSli, cpuOc, gpuOc, minRamGb, minStorageGb, moboSize, storageType,
           level: levelSettings?.level ?? 0,
           levelPercent: levelSettings?.percent ?? 0,
           levelSandbox: levelSettings?.isSandbox ?? false,
@@ -243,7 +245,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
       console.error(e)
     }
     setSearching(false)
-  }, [mode, budget, remaining, targetScore, socket, cpuBrand, gpuBrand, useSli, cpuOc, gpuOc, minRamGb, moboSize, storageType, cpus, gpus, rams, levelSettings])
+  }, [mode, budget, remaining, targetScore, socket, cpuBrand, gpuBrand, useSli, cpuOc, gpuOc, minRamGb, minStorageGb, moboSize, storageType, cpus, gpus, rams, levelSettings])
 
   // UI render below
 
@@ -293,7 +295,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         )}
 
         {mode === 'full' && (
-          <SelectCard icon={<MemoryStick className="h-4 w-4 text-purple-500" />} label={t('bm_min_ram')} value={String(minRamGb)} onChange={(v) => setMinRamGb(Number(v))} options={ramSizes.map(String)} anyLabel={t('bm_any')} />
+          <SelectCard icon={<MemoryStick className="h-4 w-4 text-purple-500" />} label={t('bm_min_ram')} value={minRamGb ? minRamGb + 'GB' : ''} onChange={(v) => setMinRamGb(Number(v.replace('GB', '')))} options={ramSizes.map(s => s + 'GB')} anyLabel={t('bm_any')} />
         )}
 
         {mode === 'full' && (
@@ -302,6 +304,10 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
 
         {mode === 'full' && (
           <SelectCard icon={<HardDrive className="h-4 w-4 text-cyan-500" />} label={t('bm_storage_type')} value={storageType} onChange={setStorageType} options={storageTypes} anyLabel={t('bm_any')} />
+        )}
+
+        {mode === 'full' && storageSizes.length > 0 && (
+          <SelectCard icon={<HardDrive className="h-4 w-4 text-teal-500" />} label={t('bm_min_storage')} value={minStorageGb ? minStorageGb + 'GB' : ''} onChange={(v) => setMinStorageGb(Number(v.replace('GB', '')))} options={storageSizes.map(s => s + 'GB')} anyLabel={t('bm_any')} />
         )}
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">

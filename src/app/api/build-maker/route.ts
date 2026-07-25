@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const {
     budget = 0, targetScore = 0, socket = '', cpuBrand = '', gpuBrand = '',
-    useSli = false, cpuOc = false, gpuOc = false, minRamGb = 0,
+    useSli = false, cpuOc = false, gpuOc = false, minRamGb = 0, minStorageGb = 0,
     moboSize = '', storageType = '',
     level = 0, levelPercent = 0, levelSandbox = false,
   } = body
@@ -183,6 +183,7 @@ export async function POST(req: NextRequest) {
   })
   const storageCandidates = storageDrives.filter(s => {
     if (storageType && s.type !== storageType) return false
+    if (minStorageGb && Number(s.size_gb) < minStorageGb) return false
     if (Number(s.price) > avail * 0.08) return false
     if (lvlFilter(s.level, s.percent_through)) return false
     return true
