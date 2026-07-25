@@ -244,10 +244,11 @@ export async function POST(req: NextRequest) {
 
     for (const gpu of gpuCandidates) {
       if (buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
+      let buildsForGpu = 0
       const totalTdp = getTotalTdp(cpu, gpu, gpuQty)
 
       for (const ram of ramCandidates) {
-        if (buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
+        if (buildsForGpu >= 3 || buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
         const coreKey = `${cpu.id}|${gpu.id}|${ram.id}`
         if (seen.has(coreKey)) continue
         seen.add(coreKey)
@@ -261,7 +262,7 @@ export async function POST(req: NextRequest) {
         let buildsForMb = 0
 
         for (const mb of compatMbs) {
-          if (buildsForMb >= 2 || buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
+          if (buildsForMb >= 2 || buildsForGpu >= 3 || buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
           const mbPrice = Number(mb.price)
           const coreTotal = cpuPrice + gpuPrice + ramPrice + mbPrice
           let rem = avail - coreTotal
@@ -281,7 +282,8 @@ export async function POST(req: NextRequest) {
           rem -= Number(cooler.price)
 
           let psu: PSU | null = null
-          const affordablePsus = psusSorted.filter(p => Number(p.wattage) >= totalTdp && Number(p.price) <= rem)
+          const psuMaxWatt = Math.max(totalTdp * 1.5, totalTdp + 300)
+          const affordablePsus = psusSorted.filter(p => Number(p.wattage) >= totalTdp && Number(p.wattage) <= psuMaxWatt && Number(p.price) <= rem)
           if (affordablePsus.length === 0) continue
           const psuIdx = Math.min((comboIdx + 1) % affordablePsus.length, affordablePsus.length - 1)
           psu = affordablePsus[psuIdx]
@@ -327,6 +329,7 @@ export async function POST(req: NextRequest) {
             totalTdp: displayTdp,
           })
           buildsForMb++
+          buildsForGpu++
           buildsForCpu++
         }
       }
