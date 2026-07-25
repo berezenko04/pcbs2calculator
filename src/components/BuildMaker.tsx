@@ -11,8 +11,10 @@ import ToggleSwitch from '@/components/ui/ToggleSwitch'
 
 const SOCKETS = ['AM4', 'LGA 1151 (Coffee Lake)', 'LGA 1151 (Kaby Lake)', 'LGA 1151 (Skylake)', 'LGA 1200', 'LGA 2066', 'TR4', 'sTRX4'] as const
 const RAM_SIZES = [8, 16, 32]
-const STORAGE_TYPES = ['SSD', 'HDD', 'NVMe']
 const CASE_SIZES = ['Mini-ITX', 'Micro-ATX', 'S-ATX', 'E-ATX', 'XL-ATX']
+
+const AMD_SOCKETS = new Set(['AM4', 'TR4', 'sTRX4'])
+const INTEL_SOCKETS = new Set(['LGA 1151 (Coffee Lake)', 'LGA 1151 (Kaby Lake)', 'LGA 1151 (Skylake)', 'LGA 1200', 'LGA 2066'])
 
 interface BuildResultSimple {
   cpu: CPU
@@ -82,6 +84,14 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
   const [searching, setSearching] = useState(false)
 
   const availableBudget = mode === 'full' ? budget : budget - remaining
+
+  const storageTypes = useMemo(() => [...new Set(storageDrives.map(s => s.type).filter(Boolean))], [storageDrives]).sort()
+
+  const handleSocketChange = useCallback((v: string) => {
+    setSocket(v)
+    if (v && AMD_SOCKETS.has(v) && cpuBrand === 'Intel') setCpuBrand('')
+    if (v && INTEL_SOCKETS.has(v) && cpuBrand === 'AMD') setCpuBrand('')
+  }, [cpuBrand])
 
   const isFull = (r: BuildResult): r is BuildResultFull => 'motherboard' in r
 
@@ -260,7 +270,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         <InputCard icon={<Target className="h-4 w-4 text-rose-500" />} label={t('bm_target_score')} value={targetScore} onChange={setTargetScore} min={0} />
 
         {mode === 'full' && (
-          <SelectCard icon={<Cpu className="h-4 w-4 text-blue-500" />} label={t('bm_socket')} value={socket} onChange={setSocket} options={[...SOCKETS]} anyLabel={t('bm_any')} />
+          <SelectCard icon={<Cpu className="h-4 w-4 text-blue-500" />} label={t('bm_socket')} value={socket} onChange={handleSocketChange} options={[...SOCKETS]} anyLabel={t('bm_any')} />
         )}
 
         {mode === 'full' && (
@@ -280,7 +290,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         )}
 
         {mode === 'full' && (
-          <SelectCard icon={<HardDrive className="h-4 w-4 text-cyan-500" />} label={t('bm_storage_type')} value={storageType} onChange={setStorageType} options={[...STORAGE_TYPES]} anyLabel={t('bm_any')} />
+          <SelectCard icon={<HardDrive className="h-4 w-4 text-cyan-500" />} label={t('bm_storage_type')} value={storageType} onChange={setStorageType} options={storageTypes} anyLabel={t('bm_any')} />
         )}
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
