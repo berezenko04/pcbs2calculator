@@ -241,7 +241,7 @@ export async function POST(req: NextRequest) {
     if (found.length >= MAX_TOTAL) break
     let buildsForCpu = 0
     const cpuSocket = cpu.cpu_socket || ''
-    const compatMbs = mbBySocket[cpuSocket] || []
+    const compatMbs = (mbBySocket[cpuSocket] || []).sort(() => Math.random() - 0.5)
     if (compatMbs.length === 0) continue
     const compatCoolers = coolersBySocket[cpuSocket] || []
     if (compatCoolers.length === 0) continue
