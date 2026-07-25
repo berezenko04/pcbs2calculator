@@ -86,11 +86,15 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
   const availableBudget = mode === 'full' ? budget : budget - remaining
 
   const storageTypes = useMemo(() => [...new Set(storageDrives.map(s => s.type).filter(Boolean))], [storageDrives]).sort()
-  const storageSizes = useMemo(() => {
+  const storageSizeOptions = useMemo(() => {
     const seen = new Set<string>()
     return [...new Set(storageDrives.map(s => s.size_gb).filter(Boolean))]
-      .sort((a, b) => a - b)
-      .filter(v => { const f = formatSizeGb(v); if (seen.has(f)) return false; seen.add(f); return true })
+      .sort((a, b) => Number(a) - Number(b))
+      .reduce<string[]>((acc, v) => {
+        const f = formatSizeGb(Number(v))
+        if (!seen.has(f)) { seen.add(f); acc.push(f) }
+        return acc
+      }, [])
   }, [storageDrives])
   const ramSizes = useMemo(() => {
     const sizes = new Set(rams.map(r => r.total_size_gb).filter(Boolean))
@@ -315,8 +319,8 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
           <SelectCard icon={<HardDrive className="h-4 w-4 text-cyan-500" />} label={t('bm_storage_type')} value={storageType} onChange={setStorageType} options={storageTypes} anyLabel={t('bm_any')} />
         )}
 
-        {mode === 'full' && storageSizes.length > 0 && (
-          <SelectCard icon={<HardDrive className="h-4 w-4 text-teal-500" />} label={t('bm_min_storage')} value={minStorageGb ? formatSizeGb(minStorageGb) : ''} onChange={(v) => setMinStorageGb(Number(v.replace('TB', '').replace('GB', '')) * (v.includes('TB') ? 1000 : 1))} options={storageSizes.map(formatSizeGb)} anyLabel={t('bm_any')} />
+        {mode === 'full' && storageSizeOptions.length > 0 && (
+          <SelectCard icon={<HardDrive className="h-4 w-4 text-teal-500" />} label={t('bm_min_storage')} value={minStorageGb ? formatSizeGb(minStorageGb) : ''} onChange={(v) => setMinStorageGb(Number(v.replace('TB', '').replace('GB', '')) * (v.includes('TB') ? 1000 : 1))} options={storageSizeOptions} anyLabel={t('bm_any')} />
         )}
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
