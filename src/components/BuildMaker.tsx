@@ -10,7 +10,6 @@ import SelectCard from '@/components/ui/SelectCard'
 import ToggleSwitch from '@/components/ui/ToggleSwitch'
 
 const SOCKETS = ['AM4', 'LGA 1151 (Coffee Lake)', 'LGA 1151 (Kaby Lake)', 'LGA 1151 (Skylake)', 'LGA 1200', 'LGA 2066', 'TR4', 'sTRX4'] as const
-const RAM_SIZES = [8, 16, 32]
 const CASE_SIZES = ['Mini-ITX', 'Micro-ATX', 'S-ATX', 'E-ATX', 'XL-ATX']
 
 const AMD_SOCKETS = new Set(['AM4', 'TR4', 'sTRX4'])
@@ -86,6 +85,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
   const availableBudget = mode === 'full' ? budget : budget - remaining
 
   const storageTypes = useMemo(() => [...new Set(storageDrives.map(s => s.type).filter(Boolean))], [storageDrives]).sort()
+  const ramSizes = useMemo(() => [...new Set(rams.map(r => r.total_size_gb).filter(Boolean))].sort((a, b) => a - b), [rams])
 
   const cpuBrandOptions = useMemo(() => {
     if (!socket) return ['AMD', 'Intel']
@@ -293,7 +293,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         )}
 
         {mode === 'full' && (
-          <SelectCard icon={<MemoryStick className="h-4 w-4 text-purple-500" />} label={t('bm_min_ram')} value={String(minRamGb)} onChange={(v) => setMinRamGb(Number(v))} options={RAM_SIZES.map(String)} anyLabel={t('bm_any')} />
+          <SelectCard icon={<MemoryStick className="h-4 w-4 text-purple-500" />} label={t('bm_min_ram')} value={String(minRamGb)} onChange={(v) => setMinRamGb(Number(v))} options={ramSizes.map(String)} anyLabel={t('bm_any')} />
         )}
 
         {mode === 'full' && (
