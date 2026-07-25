@@ -70,6 +70,11 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
           </div>
           <div className="flex items-center gap-2">
             <LangSwitcher />
+            {levelSettings && (
+              <button onClick={onOpenSettings} className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all" title={t('change_level')}>
+                <Settings className="h-5 w-5" />
+              </button>
+            )}
             <button
               onClick={() => setDarkMode((p) => !p)}
               className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all"
@@ -81,24 +86,17 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
         </div>
 
         <div className="mb-6 text-center">
-          <div className="flex items-center justify-center gap-3 mb-1">
-            <div className="bg-indigo-100 dark:bg-indigo-900 p-2.5 rounded-xl">
-              <CalcIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{t('title')}</h1>
-              <p className="text-sm text-slate-500 dark:text-gray-400">{t('subtitle')}</p>
-            </div>
+          <div className="bg-indigo-100 dark:bg-indigo-900 p-2.5 rounded-xl inline-flex mb-3">
+            <CalcIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
           </div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{t('title')}</h1>
+          <p className="text-sm text-slate-500 dark:text-gray-400">{t('subtitle')}</p>
           {levelSettings && (
             <div className="flex items-center justify-center gap-2 mt-3">
               <div className="inline-flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-full text-xs font-medium">
                 <TrendingUp className="h-3.5 w-3.5" />
                 {levelSettings.isSandbox ? t('sandbox_mode') : t('level_badge', String(levelSettings.level), String(levelSettings.percent))}
               </div>
-              <button onClick={onOpenSettings} className="p-2 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all" title={t('change_level')}>
-                <Settings className="h-4 w-4" />
-              </button>
             </div>
           )}
         </div>
