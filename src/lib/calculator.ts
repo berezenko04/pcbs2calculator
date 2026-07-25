@@ -105,6 +105,11 @@ export function formatNumber(num: number): string {
   return new Intl.NumberFormat('en-US').format(num)
 }
 
+export function formatSizeGb(gb: number): string {
+  if (gb >= 1000) return Math.round(gb / 1000) + 'TB'
+  return gb + 'GB'
+}
+
 export function isLocked(
   componentLevel: number,
   componentPercent: number | boolean | undefined | null,

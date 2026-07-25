@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Wrench, Cpu, Gpu, MemoryStick, TrendingUp, Search, DollarSign, Target, Sliders, Info, Layers, HardDrive, Box, Zap, Fan } from 'lucide-react'
 import { useLang } from '@/lib/i18n/context'
-import { estimateBuildScore, formatNumber, supportsSli, isLocked } from '@/lib/calculator'
+import { estimateBuildScore, formatNumber, formatSizeGb, supportsSli, isLocked } from '@/lib/calculator'
 import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler, LevelSettings } from '@/lib/types'
 import InputCard from '@/components/ui/InputCard'
 import SelectCard from '@/components/ui/SelectCard'
@@ -87,7 +87,11 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
 
   const storageTypes = useMemo(() => [...new Set(storageDrives.map(s => s.type).filter(Boolean))], [storageDrives]).sort()
   const storageSizes = useMemo(() => [...new Set(storageDrives.map(s => s.size_gb).filter(Boolean))].sort((a, b) => a - b), [storageDrives])
-  const ramSizes = useMemo(() => [...new Set(rams.map(r => r.total_size_gb).filter(Boolean))].sort((a, b) => a - b), [rams])
+  const ramSizes = useMemo(() => {
+    const sizes = new Set(rams.map(r => r.total_size_gb).filter(Boolean))
+    sizes.add(64)
+    return [...sizes].sort((a, b) => a - b)
+  }, [rams])
 
   const cpuBrandOptions = useMemo(() => {
     if (!socket) return ['AMD', 'Intel']
@@ -307,7 +311,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         )}
 
         {mode === 'full' && storageSizes.length > 0 && (
-          <SelectCard icon={<HardDrive className="h-4 w-4 text-teal-500" />} label={t('bm_min_storage')} value={minStorageGb ? minStorageGb + 'GB' : ''} onChange={(v) => setMinStorageGb(Number(v.replace('GB', '')))} options={storageSizes.map(s => s + 'GB')} anyLabel={t('bm_any')} />
+          <SelectCard icon={<HardDrive className="h-4 w-4 text-teal-500" />} label={t('bm_min_storage')} value={minStorageGb ? formatSizeGb(minStorageGb) : ''} onChange={(v) => setMinStorageGb(Number(v.replace('TB', '').replace('GB', '')) * (v.includes('TB') ? 1000 : 1))} options={storageSizes.map(formatSizeGb)} anyLabel={t('bm_any')} />
         )}
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
@@ -409,7 +413,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
                           <HardDrive className="h-4 w-4 text-cyan-500 shrink-0" />
                           <div>
                             <div className="font-medium text-slate-800 dark:text-gray-100">{r.storage.part_name}</div>
-                            <div className="text-xs text-slate-400">{r.storage.size_gb}GB · ${formatNumber(r.storage.price)}</div>
+                            <div className="text-xs text-slate-400">{formatSizeGb(r.storage.size_gb)} · ${formatNumber(r.storage.price)}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
