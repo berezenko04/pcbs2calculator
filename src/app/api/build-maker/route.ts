@@ -251,7 +251,6 @@ export async function POST(req: NextRequest) {
         const cpuPrice = Number(cpu.price)
         const gpuPrice = Number(gpu.price) * gpuQty
         const ramPrice = Number(ram.price) * ramQty
-        let best: any = null
 
         for (const mb of compatMbs) {
           const mbPrice = Number(mb.price)
@@ -263,58 +262,62 @@ export async function POST(req: NextRequest) {
           const compatCases = casesBySize[mbSize] || []
           if (compatCases.length === 0) continue
 
+          const comboIdx = Math.abs((cpu.id + '|' + gpu.id + '|' + ram.id + '|' + mb.id).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0))
+
           let cooler: Cooler | null = null
-          for (const cl of compatCoolers) {
-            if (Number(cl.price) <= rem) { cooler = cl; break }
-          }
-          if (!cooler) continue
+          const affordableCoolers = compatCoolers.filter(cl => Number(cl.price) <= rem)
+          if (affordableCoolers.length === 0) continue
+          const coolerIdx = Math.min(comboIdx % affordableCoolers.length, affordableCoolers.length - 1)
+          cooler = affordableCoolers[coolerIdx]
           rem -= Number(cooler.price)
 
           let psu: PSU | null = null
-          for (const p of psusSorted) {
-            if (Number(p.wattage) >= totalTdp && Number(p.price) <= rem) { psu = p; break }
-          }
-          if (!psu) continue
+          const affordablePsus = psusSorted.filter(p => Number(p.wattage) >= totalTdp && Number(p.price) <= rem)
+          if (affordablePsus.length === 0) continue
+          const psuIdx = Math.min((comboIdx + 1) % affordablePsus.length, affordablePsus.length - 1)
+          psu = affordablePsus[psuIdx]
           rem -= Number(psu.price)
 
           let caseItem: Case | null = null
-          for (const c of compatCases) {
-            if (Number(c.price) > rem) continue
-            if (psu.size && c.max_psu_length && parseInt(String(psu.size)) > Number(c.max_psu_length)) continue
-            if (cooler.type?.toLowerCase().includes('air') && cooler.height && c.max_cpu_fan_height && Number(cooler.height) > Number(c.max_cpu_fan_height)) continue
-            caseItem = c; break
-          }
-          if (!caseItem) continue
+          const compatCasesFiltered = compatCases.filter(c => {
+            if (Number(c.price) > rem) return false
+            if (psu.size && c.max_psu_length && parseInt(String(psu.size)) > Number(c.max_psu_length)) return false
+            if (cooler.type?.toLowerCase().includes('air') && cooler.height && c.max_cpu_fan_height && Number(cooler.height) > Number(c.max_cpu_fan_height)) return false
+            if (gpu.length && c.max_gpu_length && Number(gpu.length) > Number(c.max_gpu_length)) return false
+            return true
+          })
+          if (compatCasesFiltered.length === 0) continue
+          const caseIdx = Math.min((comboIdx + 2) % compatCasesFiltered.length, compatCasesFiltered.length - 1)
+          caseItem = compatCasesFiltered[caseIdx]
+          rem -= Number(caseItem.price)
 
           let storage: StorageDrive | null = null
-          for (const s of storageSorted) {
-            if (Number(s.price) <= rem) { storage = s; break }
-          }
-          if (!storage) continue
+          const affordableStorage = storageSorted.filter(s => Number(s.price) <= rem)
+          if (affordableStorage.length === 0) continue
+          const storageIdx = Math.min((comboIdx + 3) % affordableStorage.length, affordableStorage.length - 1)
+          storage = affordableStorage[storageIdx]
 
           const totalPrice = coreTotal + Number(cooler.price) + Number(psu.price) + Number(caseItem.price) + Number(storage.price)
+          const displayTdp = Number(cpu.wattage) + Number(gpu.wattage) * gpuQty
 
-          if (!best || totalPrice < best.totalPrice) {
-            best = {
-              cpu: { id: cpu.id, part_name: cpu.part_name, manufacturer: cpu.manufacturer, price: cpu.price },
-              gpu: { id: gpu.id, part_name: gpu.part_name, manufacturer: gpu.manufacturer, price: gpu.price },
-              ram: { id: ram.id, part_name: ram.part_name, manufacturer: ram.manufacturer, price: ram.price, total_size_gb: ram.total_size_gb },
-              ramQty, gpuQty,
-              motherboard: { id: mb.id, part_name: mb.part_name, manufacturer: mb.manufacturer, price: mb.price, motherboard_size: mb.motherboard_size },
-              cooler: { id: cooler.id, part_name: cooler.part_name, manufacturer: cooler.manufacturer, price: cooler.price },
-              psu: { id: psu.id, part_name: psu.part_name, manufacturer: psu.manufacturer, price: psu.price, wattage: psu.wattage },
-              case: { id: caseItem.id, part_name: caseItem.part_name, manufacturer: caseItem.manufacturer, price: caseItem.price },
-              storage: { id: storage.id, part_name: storage.part_name, manufacturer: storage.manufacturer, price: storage.price, size_gb: storage.size_gb },
-              totalPrice,
-              cpuScore: score.cpuScore,
-              gpuScore: score.gpuScore,
-              totalScore: score.totalScore,
-              rank: score.rank,
-            }
-          }
+          found.push({
+            cpu: { id: cpu.id, part_name: cpu.part_name, manufacturer: cpu.manufacturer, price: cpu.price },
+            gpu: { id: gpu.id, part_name: gpu.part_name, manufacturer: gpu.manufacturer, price: gpu.price },
+            ram: { id: ram.id, part_name: ram.part_name, manufacturer: ram.manufacturer, price: ram.price, total_size_gb: ram.total_size_gb },
+            ramQty, gpuQty,
+            motherboard: { id: mb.id, part_name: mb.part_name, manufacturer: mb.manufacturer, price: mb.price, motherboard_size: mb.motherboard_size },
+            cooler: { id: cooler.id, part_name: cooler.part_name, manufacturer: cooler.manufacturer, price: cooler.price },
+            psu: { id: psu.id, part_name: psu.part_name, manufacturer: psu.manufacturer, price: psu.price, wattage: psu.wattage },
+            case: { id: caseItem.id, part_name: caseItem.part_name, manufacturer: caseItem.manufacturer, price: caseItem.price },
+            storage: { id: storage.id, part_name: storage.part_name, manufacturer: storage.manufacturer, price: storage.price, size_gb: storage.size_gb },
+            totalPrice,
+            cpuScore: score.cpuScore,
+            gpuScore: score.gpuScore,
+            totalScore: score.totalScore,
+            rank: score.rank,
+            totalTdp: displayTdp,
+          })
         }
-
-        if (best) found.push(best)
       }
     }
   }

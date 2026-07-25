@@ -25,6 +25,7 @@ interface BuildResultSimple {
   gpuScore: number
   totalScore: number
   rank: string
+  totalTdp: number
 }
 
 interface BuildResultFull {
@@ -43,6 +44,7 @@ interface BuildResultFull {
   gpuScore: number
   totalScore: number
   rank: string
+  totalTdp: number
 }
 
 type BuildResult = BuildResultSimple | BuildResultFull
@@ -127,6 +129,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
           if (score.totalScore < targetScore) continue
 
           const key = `${cpu.id}|${gpu.id}|${gpuQty}|${ramQty}`
+          const totalTdp = cpu.wattage + gpu.wattage * gpuQty
           if (!bestBuilds.has(key) || score.totalScore > bestBuilds.get(key)!.totalScore) {
             bestBuilds.set(key, {
               cpu, gpu, ram, ramQty, gpuQty,
@@ -135,6 +138,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
               gpuScore: score.gpuScore,
               totalScore: score.totalScore,
               rank: score.rank,
+              totalTdp,
             })
           }
         }
@@ -377,11 +381,17 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-gray-700">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-indigo-500" />
-                      <span className="text-sm text-slate-500 dark:text-gray-400">{t('bm_3dmark_score')}:</span>
-                      <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{formatNumber(r.totalScore)}</span>
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-gray-700">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-indigo-500" />
+                        <span className="text-sm text-slate-500 dark:text-gray-400">{t('bm_3dmark_score')}:</span>
+                        <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{formatNumber(r.totalScore)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-sm text-slate-400 dark:text-gray-500">
+                        <Zap className="h-3.5 w-3.5 text-amber-400" />
+                        <span>{r.totalTdp}W</span>
+                      </div>
                     </div>
                     <span className={'px-2.5 py-1 rounded-full text-xs font-semibold ' + (
                       r.rank === 'Elite' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300' :

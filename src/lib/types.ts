@@ -170,6 +170,12 @@ export interface LevelSettings {
   isSandbox?: boolean
 }
 
+export interface TdpInfo {
+  total: number
+  cpu_wattage: number
+  gpu_wattage: number
+}
+
 export interface ScoreResult {
   cpuScore: number
   gpuScore: number
