@@ -69,7 +69,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
   const [budget, setBudget] = useState(0)
   const [remaining, setRemaining] = useState(0)
   const [targetScore, setTargetScore] = useState(0)
-  const [scoreOffset, setScoreOffset] = useState(500)
+  const [scoreOffset, setScoreOffset] = useState(1000)
   const [socket, setSocket] = useState('')
   const [cpuBrand, setCpuBrand] = useState('')
   const [gpuBrand, setGpuBrand] = useState('')
