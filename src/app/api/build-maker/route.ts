@@ -227,27 +227,27 @@ export async function POST(req: NextRequest) {
     mbBySocket[s].push(mb)
   }
 
-  const cpuSorted = [...cpuCandidates].sort((a, b) => (Number(b.basic_cpu_score) || 0) - (Number(a.basic_cpu_score) || 0))
-  const gpuSorted = [...gpuCandidates].sort((a, b) => (Number(b.single_gpu_graphics_score) || 0) - (Number(a.single_gpu_graphics_score) || 0))
-
   const found: any[] = []
   const seen = new Set<string>()
-  const MAX_BUILDS = 200
+  const MAX_TOTAL = 200
+  const cpuCount = Math.min(cpuCandidates.length, 8)
+  const MAX_PER_CPU = Math.ceil(MAX_TOTAL / cpuCount)
 
-  for (const cpu of cpuSorted) {
-    if (found.length >= MAX_BUILDS) break
+  for (const cpu of cpuCandidates) {
+    if (found.length >= MAX_TOTAL) break
+    let buildsForCpu = 0
     const cpuSocket = cpu.cpu_socket || ''
     const compatMbs = mbBySocket[cpuSocket] || []
     if (compatMbs.length === 0) continue
     const compatCoolers = coolersBySocket[cpuSocket] || []
     if (compatCoolers.length === 0) continue
 
-    for (const gpu of gpuSorted) {
-      if (found.length >= MAX_BUILDS) break
+    for (const gpu of gpuCandidates) {
+      if (buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
       const totalTdp = getTotalTdp(cpu, gpu, gpuQty)
 
       for (const ram of ramCandidates) {
-        if (found.length >= MAX_BUILDS) break
+        if (buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
         const coreKey = `${cpu.id}|${gpu.id}|${ram.id}`
         if (seen.has(coreKey)) continue
         seen.add(coreKey)
@@ -261,7 +261,7 @@ export async function POST(req: NextRequest) {
         let buildsForMb = 0
 
         for (const mb of compatMbs) {
-          if (buildsForMb >= 2 || found.length >= MAX_BUILDS) break
+          if (buildsForMb >= 2 || buildsForCpu >= MAX_PER_CPU || found.length >= MAX_TOTAL) break
           const mbPrice = Number(mb.price)
           const coreTotal = cpuPrice + gpuPrice + ramPrice + mbPrice
           let rem = avail - coreTotal
@@ -327,6 +327,7 @@ export async function POST(req: NextRequest) {
             totalTdp: displayTdp,
           })
           buildsForMb++
+          buildsForCpu++
         }
       }
     }
