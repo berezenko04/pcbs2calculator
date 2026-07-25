@@ -5,6 +5,9 @@ import { Wrench, Cpu, Gpu, MemoryStick, TrendingUp, Search, DollarSign, Target, 
 import { useLang } from '@/lib/i18n/context'
 import { estimateBuildScore, formatNumber, supportsSli, isLocked } from '@/lib/calculator'
 import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler, LevelSettings } from '@/lib/types'
+import InputCard from '@/components/ui/InputCard'
+import SelectCard from '@/components/ui/SelectCard'
+import ToggleSwitch from '@/components/ui/ToggleSwitch'
 
 const SOCKETS = ['AM4', 'LGA 1151 (Coffee Lake)', 'LGA 1151 (Kaby Lake)', 'LGA 1151 (Skylake)', 'LGA 1200', 'LGA 2066', 'TR4', 'sTRX4'] as const
 const RAM_SIZES = [8, 16, 32]
@@ -224,157 +227,41 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         </div>
       </div>
 
-      {/* Input fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-            <DollarSign className="h-4 w-4 text-emerald-500" />
-            {t('bm_budget')}
-          </label>
-          <input
-            type="number"
-            min={0}
-            value={budget}
-            onChange={(e) => setBudget(Number(e.target.value))}
-            className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
-        </div>
+        <InputCard icon={<DollarSign className="h-4 w-4 text-emerald-500" />} label={t('bm_budget')} value={budget} onChange={setBudget} min={0} />
 
         {mode === 'simple' && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-              <Info className="h-4 w-4 text-sky-500" />
-              {t('bm_remaining')}
-            </label>
-            <input
-              type="number"
-              min={0}
-              value={remaining}
-              onChange={(e) => setRemaining(Number(e.target.value))}
-              className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            />
+          <InputCard icon={<Info className="h-4 w-4 text-sky-500" />} label={t('bm_remaining')} value={remaining} onChange={setRemaining} min={0}>
             <div className="text-xs text-slate-400 dark:text-gray-500 mt-1">
               {t('bm_available')}: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatNumber(availableBudget)}</span>
             </div>
-          </div>
+          </InputCard>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-            <Target className="h-4 w-4 text-rose-500" />
-            {t('bm_target_score')}
-          </label>
-          <input
-            type="number"
-            min={0}
-            value={targetScore}
-            onChange={(e) => setTargetScore(Number(e.target.value))}
-            className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
-        </div>
+        <InputCard icon={<Target className="h-4 w-4 text-rose-500" />} label={t('bm_target_score')} value={targetScore} onChange={setTargetScore} min={0} />
 
         {mode === 'full' && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-              <Cpu className="h-4 w-4 text-blue-500" />
-              {t('bm_socket')}
-            </label>
-            <select
-              value={socket}
-              onChange={(e) => setSocket(e.target.value)}
-              className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
-            >
-              <option value="">{t('bm_any')}</option>
-              {SOCKETS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
+          <SelectCard icon={<Cpu className="h-4 w-4 text-blue-500" />} label={t('bm_socket')} value={socket} onChange={setSocket} options={[...SOCKETS]} anyLabel={t('bm_any')} />
         )}
 
         {mode === 'full' && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-              <Layers className="h-4 w-4 text-purple-500" />
-              {t('bm_cpu_brand')}
-            </label>
-            <select
-              value={cpuBrand}
-              onChange={(e) => setCpuBrand(e.target.value)}
-              className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
-            >
-              <option value="">{t('bm_any')}</option>
-              <option value="AMD">AMD</option>
-              <option value="Intel">Intel</option>
-            </select>
-          </div>
+          <SelectCard icon={<Layers className="h-4 w-4 text-purple-500" />} label={t('bm_cpu_brand')} value={cpuBrand} onChange={setCpuBrand} options={['AMD', 'Intel']} anyLabel={t('bm_any')} />
         )}
 
         {mode === 'full' && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-              <Gpu className="h-4 w-4 text-green-500" />
-              {t('bm_gpu_brand')}
-            </label>
-            <select
-              value={gpuBrand}
-              onChange={(e) => setGpuBrand(e.target.value)}
-              className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
-            >
-              <option value="">{t('bm_any')}</option>
-              <option value="AMD">AMD</option>
-              <option value="NVIDIA">NVIDIA</option>
-            </select>
-          </div>
+          <SelectCard icon={<Gpu className="h-4 w-4 text-green-500" />} label={t('bm_gpu_brand')} value={gpuBrand} onChange={setGpuBrand} options={['AMD', 'NVIDIA']} anyLabel={t('bm_any')} />
         )}
 
         {mode === 'full' && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-              <MemoryStick className="h-4 w-4 text-purple-500" />
-              {t('bm_min_ram')}
-            </label>
-            <select
-              value={minRamGb}
-              onChange={(e) => setMinRamGb(Number(e.target.value))}
-              className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
-            >
-              <option value="0">{t('bm_any')}</option>
-              {RAM_SIZES.map((s) => <option key={s} value={s}>{s} GB</option>)}
-            </select>
-          </div>
+          <SelectCard icon={<MemoryStick className="h-4 w-4 text-purple-500" />} label={t('bm_min_ram')} value={String(minRamGb)} onChange={(v) => setMinRamGb(Number(v))} options={RAM_SIZES.map(String)} anyLabel={t('bm_any')} />
         )}
 
         {mode === 'full' && (
-          <>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-                <Box className="h-4 w-4 text-orange-500" />
-                {t('bm_mobo_size')}
-              </label>
-              <select
-                value={moboSize}
-                onChange={(e) => setMoboSize(e.target.value)}
-                className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
-              >
-                <option value="">{t('bm_any')}</option>
-                {CASE_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
+          <SelectCard icon={<Box className="h-4 w-4 text-orange-500" />} label={t('bm_mobo_size')} value={moboSize} onChange={setMoboSize} options={[...CASE_SIZES]} anyLabel={t('bm_any')} />
+        )}
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
-                <HardDrive className="h-4 w-4 text-cyan-500" />
-                {t('bm_storage_type')}
-              </label>
-              <select
-                value={storageType}
-                onChange={(e) => setStorageType(e.target.value)}
-                className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100"
-              >
-                <option value="">{t('bm_any')}</option>
-                {STORAGE_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-          </>
+        {mode === 'full' && (
+          <SelectCard icon={<HardDrive className="h-4 w-4 text-cyan-500" />} label={t('bm_storage_type')} value={storageType} onChange={setStorageType} options={[...STORAGE_TYPES]} anyLabel={t('bm_any')} />
         )}
 
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
@@ -383,33 +270,9 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
             {t('bm_options')}
           </label>
           <div className="space-y-3">
-            <label className="flex items-center justify-between text-sm text-slate-600 dark:text-gray-400">
-              <span>SLI / Crossfire</span>
-              <button
-                onClick={() => setUseSli((p) => !p)}
-                className={'relative w-10 h-5 rounded-full transition-colors ' + (useSli ? 'bg-green-600' : 'bg-slate-300 dark:bg-gray-600')}
-              >
-                <span className={'absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ' + (useSli ? 'translate-x-5' : '')} />
-              </button>
-            </label>
-            <label className="flex items-center justify-between text-sm text-slate-600 dark:text-gray-400">
-              <span>{t('bm_cpu_oc')}</span>
-              <button
-                onClick={() => setCpuOc((p) => !p)}
-                className={'relative w-10 h-5 rounded-full transition-colors ' + (cpuOc ? 'bg-blue-600' : 'bg-slate-300 dark:bg-gray-600')}
-              >
-                <span className={'absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ' + (cpuOc ? 'translate-x-5' : '')} />
-              </button>
-            </label>
-            <label className="flex items-center justify-between text-sm text-slate-600 dark:text-gray-400">
-              <span>{t('bm_gpu_oc')}</span>
-              <button
-                onClick={() => setGpuOc((p) => !p)}
-                className={'relative w-10 h-5 rounded-full transition-colors ' + (gpuOc ? 'bg-green-600' : 'bg-slate-300 dark:bg-gray-600')}
-              >
-                <span className={'absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ' + (gpuOc ? 'translate-x-5' : '')} />
-              </button>
-            </label>
+            <ToggleSwitch label="SLI / Crossfire" checked={useSli} onChange={setUseSli} />
+            <ToggleSwitch label={t('bm_cpu_oc')} checked={cpuOc} onChange={setCpuOc} activeColor="bg-blue-600" />
+            <ToggleSwitch label={t('bm_gpu_oc')} checked={gpuOc} onChange={setGpuOc} />
           </div>
         </div>
       </div>
