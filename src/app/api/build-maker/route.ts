@@ -227,20 +227,27 @@ export async function POST(req: NextRequest) {
     mbBySocket[s].push(mb)
   }
 
+  const cpuSorted = [...cpuCandidates].sort((a, b) => (Number(b.basic_cpu_score) || 0) - (Number(a.basic_cpu_score) || 0))
+  const gpuSorted = [...gpuCandidates].sort((a, b) => (Number(b.single_gpu_graphics_score) || 0) - (Number(a.single_gpu_graphics_score) || 0))
+
   const found: any[] = []
   const seen = new Set<string>()
+  const MAX_BUILDS = 200
 
-  for (const cpu of cpuCandidates) {
+  for (const cpu of cpuSorted) {
+    if (found.length >= MAX_BUILDS) break
     const cpuSocket = cpu.cpu_socket || ''
     const compatMbs = mbBySocket[cpuSocket] || []
     if (compatMbs.length === 0) continue
     const compatCoolers = coolersBySocket[cpuSocket] || []
     if (compatCoolers.length === 0) continue
 
-    for (const gpu of gpuCandidates) {
+    for (const gpu of gpuSorted) {
+      if (found.length >= MAX_BUILDS) break
       const totalTdp = getTotalTdp(cpu, gpu, gpuQty)
 
       for (const ram of ramCandidates) {
+        if (found.length >= MAX_BUILDS) break
         const coreKey = `${cpu.id}|${gpu.id}|${ram.id}`
         if (seen.has(coreKey)) continue
         seen.add(coreKey)
@@ -254,7 +261,7 @@ export async function POST(req: NextRequest) {
         let buildsForMb = 0
 
         for (const mb of compatMbs) {
-          if (buildsForMb >= 2 || found.length >= 300) break
+          if (buildsForMb >= 2 || found.length >= MAX_BUILDS) break
           const mbPrice = Number(mb.price)
           const coreTotal = cpuPrice + gpuPrice + ramPrice + mbPrice
           let rem = avail - coreTotal
