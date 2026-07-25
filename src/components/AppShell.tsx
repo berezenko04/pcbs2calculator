@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, ReactNode } from 'react'
-import { Calculator, Wrench, Moon, Sun, Star, TrendingUp, Settings } from 'lucide-react'
+import { Calculator as CalcIcon, Wrench, Moon, Sun, Star, TrendingUp, Settings } from 'lucide-react'
 import LangSwitcher from './LangSwitcher'
 import { useLang } from '@/lib/i18n/context'
 import type { LevelSettings } from '@/lib/types'
@@ -42,15 +42,14 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
     document.documentElement.classList.toggle('dark', darkMode)
   }, [darkMode])
 
-  const tabs: { id: TabId; label: string; icon: typeof Calculator }[] = [
-    { id: 'calculator', label: t('tab_calculator'), icon: Calculator },
+  const tabs: { id: TabId; label: string; icon: typeof CalcIcon }[] = [
+    { id: 'calculator', label: t('tab_calculator'), icon: CalcIcon },
     { id: 'buildmaker', label: t('tab_build_maker'), icon: Wrench },
   ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 sm:py-12 sm:px-6 lg:py-16 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Top bar */}
         <div className="flex items-center justify-between mb-8">
           <div>
             {starCount !== null && (
@@ -81,10 +80,16 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
           </div>
         </div>
 
-        {/* Title */}
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{t('title')}</h1>
-          <p className="text-sm text-slate-500 dark:text-gray-400">{t('subtitle')}</p>
+          <div className="flex items-center justify-center gap-3 mb-1">
+            <div className="bg-indigo-100 dark:bg-indigo-900 p-2.5 rounded-xl">
+              <CalcIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="text-left">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{t('title')}</h1>
+              <p className="text-sm text-slate-500 dark:text-gray-400">{t('subtitle')}</p>
+            </div>
+          </div>
           {levelSettings && (
             <div className="flex items-center justify-center gap-2 mt-3">
               <div className="inline-flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-full text-xs font-medium">
@@ -98,7 +103,6 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
           )}
         </div>
 
-        {/* Tabs */}
         <div className="flex justify-center mb-8">
           <div className="inline-flex bg-white/80 dark:bg-gray-800/60 backdrop-blur-sm border border-slate-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
             {tabs.map((tab) => {
@@ -121,7 +125,6 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
           </div>
         </div>
 
-        {/* Content */}
         {children}
       </div>
     </div>
