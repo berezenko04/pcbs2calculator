@@ -30,17 +30,25 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
   })
   const [starCount, setStarCount] = useState<number | null>(null)
 
+  const toggleDark = () => {
+    const next = !document.documentElement.classList.contains('dark')
+    if (document.startViewTransition) {
+      document.startViewTransition(() => {
+        document.documentElement.classList.toggle('dark', next)
+      })
+    } else {
+      document.documentElement.classList.toggle('dark', next)
+    }
+    localStorage.setItem('pcbs2_dark', String(next))
+    setDarkMode(next)
+  }
+
   useEffect(() => {
     fetch('https://api.github.com/repos/berezenko04/pcbs2calculator')
       .then(r => r.json())
       .then(d => setStarCount(d.stargazers_count))
       .catch(() => {})
   }, [])
-
-  useEffect(() => {
-    localStorage.setItem('pcbs2_dark', String(darkMode))
-    document.documentElement.classList.toggle('dark', darkMode)
-  }, [darkMode])
 
   const tabs: { id: TabId; label: string; icon: typeof CalcIcon }[] = [
     { id: 'calculator', label: t('tab_calculator'), icon: CalcIcon },
@@ -71,7 +79,7 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
           <div className="flex items-center gap-2">
             <LangSwitcher />
             <button
-              onClick={() => setDarkMode((p) => !p)}
+              onClick={toggleDark}
               className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all"
               title={t('toggle_dark')}
             >
