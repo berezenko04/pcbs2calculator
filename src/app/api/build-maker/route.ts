@@ -109,7 +109,7 @@ function isLocked(
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const {
-    budget = 0, targetScore = 0, socket = '', cpuBrand = '', gpuBrand = '',
+    budget = 0, targetScore = 0, scoreOffset = 0, socket = '', cpuBrand = '', gpuBrand = '',
     useSli = false, cpuOc = false, gpuOc = false, minRamGb = 0, minStorageGb = 0,
     moboSize = '', storageType = '',
     level = 0, levelPercent = 0, levelSandbox = false,
@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
         seen.add(coreKey)
 
         const score = estimateScore(cpu, gpu, ram, ramQty, gpuQty, cpuOc, gpuOc)
-        if (score.totalScore < targetScore) continue
+        if (score.totalScore < targetScore || (scoreOffset > 0 && score.totalScore > targetScore + scoreOffset)) continue
 
         const cpuPrice = Number(cpu.price)
         const gpuPrice = Number(gpu.price) * gpuQty

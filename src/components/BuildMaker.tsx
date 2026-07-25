@@ -69,6 +69,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
   const [budget, setBudget] = useState(0)
   const [remaining, setRemaining] = useState(0)
   const [targetScore, setTargetScore] = useState(0)
+  const [scoreOffset, setScoreOffset] = useState(0)
   const [socket, setSocket] = useState('')
   const [cpuBrand, setCpuBrand] = useState('')
   const [gpuBrand, setGpuBrand] = useState('')
@@ -162,7 +163,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
           if (totalPrice > available) continue
 
           const score = estimateBuildScore(cpu, gpu, ram, ramQty, gpuQty, cpuOc, gpuOc)
-          if (score.totalScore < targetScore) continue
+          if (score.totalScore < targetScore || (scoreOffset > 0 && score.totalScore > targetScore + scoreOffset)) continue
 
           const key = `${cpu.id}|${gpu.id}|${gpuQty}|${ramQty}`
           const totalTdp = cpu.wattage + gpu.wattage * gpuQty
@@ -227,7 +228,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          budget, targetScore, socket, cpuBrand, gpuBrand,
+          budget, targetScore, scoreOffset, socket, cpuBrand, gpuBrand,
           useSli, cpuOc, gpuOc, minRamGb, minStorageGb, moboSize, storageType,
           level: levelSettings?.level ?? 0,
           levelPercent: levelSettings?.percent ?? 0,
@@ -258,7 +259,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
       console.error(e)
     }
     setSearching(false)
-  }, [mode, budget, remaining, targetScore, socket, cpuBrand, gpuBrand, useSli, cpuOc, gpuOc, minRamGb, minStorageGb, moboSize, storageType, cpus, gpus, rams, levelSettings])
+  }, [mode, budget, remaining, targetScore, scoreOffset, socket, cpuBrand, gpuBrand, useSli, cpuOc, gpuOc, minRamGb, minStorageGb, moboSize, storageType, cpus, gpus, rams, levelSettings])
 
   // UI render below
 
@@ -294,6 +295,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         )}
 
         <InputCard icon={<Target className="h-4 w-4 text-rose-500" />} label={t('bm_target_score')} value={targetScore} onChange={setTargetScore} min={0} />
+        <InputCard icon={<TrendingUp className="h-4 w-4 text-orange-500" />} label={t('bm_score_offset')} value={scoreOffset} onChange={setScoreOffset} min={0} />
 
         {mode === 'full' && (
           <SelectCard icon={<Cpu className="h-4 w-4 text-blue-500" />} label={t('bm_socket')} value={socket} onChange={handleSocketChange} options={[...SOCKETS]} anyLabel={t('bm_any')} />
