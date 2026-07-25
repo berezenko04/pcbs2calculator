@@ -316,7 +316,7 @@ export async function POST(req: NextRequest) {
           found.push({
             cpu: { id: cpu.id, part_name: cpu.part_name, manufacturer: cpu.manufacturer, price: cpu.price },
             gpu: { id: gpu.id, part_name: gpu.part_name, manufacturer: gpu.manufacturer, price: gpu.price },
-            ram: { id: ram.id, part_name: ram.part_name, manufacturer: ram.manufacturer, price: ram.price, total_size_gb: ram.total_size_gb },
+            ram: { id: ram.id, part_name: ram.part_name, manufacturer: ram.manufacturer, price: ram.price, total_size_gb: ram.total_size_gb, frequency: ram.frequency },
             ramQty, gpuQty,
             motherboard: { id: mb.id, part_name: mb.part_name, manufacturer: mb.manufacturer, price: mb.price, motherboard_size: mb.motherboard_size },
             cooler: { id: cooler.id, part_name: cooler.part_name, manufacturer: cooler.manufacturer, price: cooler.price },
