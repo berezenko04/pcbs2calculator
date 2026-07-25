@@ -11,7 +11,11 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-::view-transition-old(root),
+::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
 ::view-transition-new(root) {
-  animation-duration: 0.3s;
+  animation: none;
+  mix-blend-mode: normal;
 }

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, ReactNode } from 'react'
+import { useState, useEffect, ReactNode, useRef } from 'react'
+import { flushSync } from 'react-dom'
 import { Calculator as CalcIcon, Wrench, Moon, Sun, Star, TrendingUp, Settings } from 'lucide-react'
 import LangSwitcher from './LangSwitcher'
 import { useLang } from '@/lib/i18n/context'
@@ -29,18 +30,45 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
     return false
   })
   const [starCount, setStarCount] = useState<number | null>(null)
+  const themeBtnRef = useRef<HTMLButtonElement>(null)
 
   const toggleDark = () => {
     const next = !document.documentElement.classList.contains('dark')
-    if (document.startViewTransition) {
+    if (
+      document.startViewTransition &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
       document.startViewTransition(() => {
-        document.documentElement.classList.toggle('dark', next)
+        flushSync(() => {
+          document.documentElement.classList.toggle('dark', next)
+          localStorage.setItem('pcbs2_dark', String(next))
+          setDarkMode(next)
+        })
+      }).ready.then(() => {
+        const btn = themeBtnRef.current
+        if (!btn) return
+        const { left, top, width, height } = btn.getBoundingClientRect()
+        const x = left + width / 2
+        const y = top + height / 2
+        const maxRadius = Math.hypot(
+          Math.max(x, window.innerWidth - x),
+          Math.max(y, window.innerHeight - y),
+        )
+        document.documentElement.animate(
+          {
+            clipPath: [
+              `circle(0px at ${x}px ${y}px)`,
+              `circle(${maxRadius}px at ${x}px ${y}px)`,
+            ],
+          },
+          { duration: 500, easing: 'ease-in-out', pseudoElement: '::view-transition-new(root)' },
+        )
       })
     } else {
       document.documentElement.classList.toggle('dark', next)
+      localStorage.setItem('pcbs2_dark', String(next))
+      setDarkMode(next)
     }
-    localStorage.setItem('pcbs2_dark', String(next))
-    setDarkMode(next)
   }
 
   useEffect(() => {
@@ -79,6 +107,7 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
           <div className="flex items-center gap-2">
             <LangSwitcher />
             <button
+              ref={themeBtnRef}
               onClick={toggleDark}
               className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all"
               title={t('toggle_dark')}
