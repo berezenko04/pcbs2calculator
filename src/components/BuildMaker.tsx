@@ -83,6 +83,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
   const [results, setResults] = useState<BuildResult[]>([])
   const [searched, setSearched] = useState(false)
   const [searching, setSearching] = useState(false)
+  const [budgetError, setBudgetError] = useState('')
 
   const availableBudget = mode === 'full' ? budget : budget - remaining
 
@@ -245,6 +246,12 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
   }
 
   const doSearch = useCallback(async () => {
+    const available = mode === 'full' ? budget : budget - remaining
+    if (available <= 0) {
+      setBudgetError(mode === 'full' ? t('bm_enter_budget') : t('bm_enter_budget_or_remaining'))
+      setTimeout(() => setBudgetError(''), 2500)
+      return
+    }
     setSearching(true)
     setResults([])
     setSearched(false)
@@ -348,6 +355,11 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
           <Search className="h-5 w-5" />
           {searching ? t('bm_searching') : t('bm_find')}
         </button>
+        {budgetError && (
+          <div className="mt-3 text-sm text-rose-500 dark:text-rose-400 font-medium animate-pulse">
+            {budgetError}
+          </div>
+        )}
       </div>
 
       {/* Results */}

@@ -103,6 +103,8 @@ const t: Record<Lang, Translations> = {
     'bm_storage_type': 'Storage Type',
     'bm_min_storage': 'Min. Storage',
     'bm_searching': 'Searching...',
+    'bm_enter_budget': 'Please enter a budget first',
+    'bm_enter_budget_or_remaining': 'Please enter a budget and remaining amount',
   },
   ru: {
     'loading': 'Загрузка компонентов...',
@@ -192,6 +194,8 @@ const t: Record<Lang, Translations> = {
     'bm_storage_type': 'Тип накопителя',
     'bm_min_storage': 'Мин. диск',
     'bm_searching': 'Поиск...',
+    'bm_enter_budget': 'Сначала укажите бюджет',
+    'bm_enter_budget_or_remaining': 'Укажите бюджет и остаток',
   },
   uk: {
     'loading': 'Завантаження компонентів...',
