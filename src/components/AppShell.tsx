@@ -31,18 +31,13 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
   })
   const [starCount, setStarCount] = useState<number | null>(null)
   const [stuck, setStuck] = useState(false)
-  const sentinelRef = useRef<HTMLDivElement>(null)
   const themeBtnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    const sentinel = sentinelRef.current
-    if (!sentinel) return
-    const observer = new IntersectionObserver(
-      ([entry]) => setStuck(!entry.isIntersecting),
-      { rootMargin: '1px 0px 0px 0px' }
-    )
-    observer.observe(sentinel)
-    return () => observer.disconnect()
+    const onScroll = () => setStuck(window.scrollY > 15)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   const toggleDark = () => {
@@ -99,7 +94,6 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
-      <div ref={sentinelRef} />
 
       <div className={`sticky top-0 z-50 transition-[background-color,box-shadow,border-color] duration-300 ${stuck ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-sm border-b border-slate-200/60 dark:border-gray-700/60' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
