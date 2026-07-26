@@ -60,6 +60,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
   const [searched, setSearched] = useState(false)
   const [searching, setSearching] = useState(false)
   const [budgetError, setBudgetError] = useState('')
+  const [alreadyMet, setAlreadyMet] = useState(false)
   const [lastCandidateCounts, setLastCandidateCounts] = useState({ cpu: 0, gpu: 0, ram: 0 })
 
   const levelSettingsKey = levelSettings ? `${levelSettings.level}-${levelSettings.percent}` : null
@@ -187,9 +188,21 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
       setTimeout(() => setBudgetError(''), 2500)
       return
     }
+    if (targetScore <= 0) {
+      setBudgetError(t('bm_target_score'))
+      setTimeout(() => setBudgetError(''), 2500)
+      return
+    }
     if (!selectedCPU || !selectedGPU || !selectedRAM) {
       setBudgetError(t('bu_select_components'))
       setTimeout(() => setBudgetError(''), 2500)
+      return
+    }
+    setAlreadyMet(false)
+    if (currentTotalScore >= targetScore) {
+      setAlreadyMet(true)
+      setSearched(true)
+      setResults([])
       return
     }
     setSearching(true)
@@ -413,7 +426,13 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
 
       {searched && (
         <div>
-          {results.length === 0 ? (
+          {alreadyMet ? (
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg border-l-4 border-emerald-500">
+              <TrendingUp className="h-12 w-12 mx-auto mb-3 text-emerald-500" />
+              <h3 className="text-lg font-semibold text-emerald-600 dark:text-emerald-400 mb-1">{t('bu_already_met')}</h3>
+              <p className="text-sm text-slate-400 dark:text-gray-500">{t('bm_3dmark_score')}: {formatNumber(currentTotalScore)}</p>
+            </div>
+          ) : results.length === 0 ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
               <ArrowUp className="h-12 w-12 mx-auto mb-3 text-slate-400 dark:text-gray-500" />
               <h3 className="text-lg font-semibold text-slate-700 dark:text-gray-300 mb-1">{t('bu_no_results')}</h3>
