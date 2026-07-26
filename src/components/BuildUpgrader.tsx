@@ -94,14 +94,17 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
 
     const cpuCandidates = availableCPUs.filter(c =>
       c.id !== currentCPU.id && c.price <= available &&
-      (!currentMobo || !currentMobo.cpu_socket || c.cpu_socket === currentMobo.cpu_socket)
+      (!currentMobo || !currentMobo.cpu_socket || c.cpu_socket === currentMobo.cpu_socket) &&
+      c.basic_cpu_score > currentCPU.basic_cpu_score
     )
     const gpuCandidates = availableGPUs.filter(g =>
       g.id !== currentGPU.id && g.price <= available &&
-      (!useSli || supportsSli(g))
+      (!useSli || supportsSli(g)) &&
+      Number(g.single_gpu_graphics_score) > Number(currentGPU.single_gpu_graphics_score)
     )
     const ramCandidates = availableRAMs.filter(r =>
-      r.id !== currentRAM.id && r.price * (ramQuantity || 1) <= available
+      r.id !== currentRAM.id && r.price * (ramQuantity || 1) <= available &&
+      (r.frequency > currentRAM.frequency || r.total_size_gb > currentRAM.total_size_gb)
     )
     setLastCandidateCounts({ cpu: cpuCandidates.length, gpu: gpuCandidates.length, ram: ramCandidates.length })
 
@@ -173,7 +176,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
       }
     }
 
-    const sorted = [...bestPerStrategy.values()].sort((a, b) => b.scoreDelta - a.scoreDelta || a.cost - b.cost)
+    const sorted = [...bestPerStrategy.values()].sort((a, b) => a.cost - b.cost || b.scoreDelta - a.scoreDelta)
     setResults(sorted)
     setSearched(true)
   }
@@ -366,9 +369,8 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
               noResultsText={t('no_results')}
             />
             {currentMobo && (
-              <div className="text-xs text-slate-400 dark:text-gray-500 mt-1 space-y-0.5">
-                {currentMobo.cpu_socket && <div>{t('bm_socket')}: {currentMobo.cpu_socket}</div>}
-                {currentMobo.motherboard_size && <div>{currentMobo.motherboard_size}</div>}
+              <div className="text-xs text-slate-400 dark:text-gray-500 mt-1">
+                {currentMobo.cpu_socket ? t('bm_socket') + ': ' + currentMobo.cpu_socket : ''}{currentMobo.cpu_socket && currentMobo.motherboard_size ? ' · ' : ''}{currentMobo.motherboard_size ?? ''}
               </div>
             )}
           </div>
