@@ -95,7 +95,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
     const cpuCandidates = availableCPUs.filter(c =>
       c.id !== currentCPU.id && c.price <= available &&
       (!currentMobo || !currentMobo.cpu_socket || c.cpu_socket === currentMobo.cpu_socket) &&
-      c.basic_cpu_score > currentCPU.basic_cpu_score
+      Number(c.basic_cpu_score) > Number(currentCPU.basic_cpu_score)
     )
     const gpuCandidates = availableGPUs.filter(g =>
       g.id !== currentGPU.id && g.price <= available &&
@@ -104,7 +104,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
     )
     const ramCandidates = availableRAMs.filter(r =>
       r.id !== currentRAM.id && r.price * (ramQuantity || 1) <= available &&
-      (r.frequency > currentRAM.frequency || r.total_size_gb > currentRAM.total_size_gb)
+      (Number(r.frequency) > Number(currentRAM.frequency) || Number(r.total_size_gb) > Number(currentRAM.total_size_gb))
     )
     setLastCandidateCounts({ cpu: cpuCandidates.length, gpu: gpuCandidates.length, ram: ramCandidates.length })
 
@@ -233,7 +233,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
             <SearchableSelect
               options={cases} value={selectedCase}
               onChange={setSelectedCase}
-              placeholder={t('bu_case')}
+              placeholder={t('bm_any')}
               getLabel={(c) => `${c.manufacturer} ${c.part_name}`}
               noResultsText={t('no_results')}
             />
@@ -364,7 +364,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
             <SearchableSelect
               options={motherboards} value={selectedMobo}
               onChange={setSelectedMobo}
-              placeholder={t('bu_motherboard')}
+              placeholder={t('bm_any')}
               getLabel={(m) => `${m.manufacturer} ${m.part_name}`}
               noResultsText={t('no_results')}
             />
