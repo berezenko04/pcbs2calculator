@@ -101,19 +101,14 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       <div ref={sentinelRef} />
 
-      <div className={`sticky top-0 z-50 transition-all duration-300 ${stuck ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg shadow-sm border-b border-slate-200/60 dark:border-gray-700/60' : ''}`}>
+      <div className={`sticky top-0 z-50 transition-[background-color,box-shadow,border-color] duration-300 ${stuck ? 'bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-sm border-b border-slate-200/60 dark:border-gray-700/60' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className={`transition-all duration-300 ${stuck ? 'py-2' : 'pt-8 pb-0 sm:pt-12 lg:pt-16'}`}>
-            <div className="flex items-center justify-between mb-8">
-              {stuck ? (
-                <div className="flex items-center gap-2">
-                  <div className="bg-indigo-100 dark:bg-indigo-900 p-1.5 rounded-lg">
-                    <CalcIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <span className="text-sm font-bold text-slate-900 dark:text-gray-100">{t('title')}</span>
-                </div>
-              ) : (
-                <div>
+
+          <div className="relative">
+            {/* Collapsible header content (star, title, subtitle) */}
+            <div className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${stuck ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'}`}>
+              <div className="pt-8 sm:pt-12 lg:pt-16">
+                <div className="mb-8">
                   {starCount !== null && (
                     <a
                       href="https://github.com/berezenko04/pcbs2calculator"
@@ -130,80 +125,72 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
                     </a>
                   )}
                 </div>
-              )}
-              <div className="flex items-center gap-2">
+
+                <div className="mb-6 text-center">
+                  <div className="bg-indigo-100 dark:bg-indigo-900 p-2.5 rounded-xl inline-flex mb-3">
+                    <CalcIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{t('title')}</h1>
+                  <p className="text-sm text-slate-500 dark:text-gray-400">{t('subtitle')}</p>
+                  {levelSettings && (
+                    <div className="flex items-center justify-center gap-2 mt-3">
+                      <div className="inline-flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-full text-xs font-medium">
+                        <TrendingUp className="h-3.5 w-3.5" />
+                        {levelSettings.isSandbox ? t('sandbox_mode') : t('level_badge', String(levelSettings.level), String(levelSettings.percent))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Always-visible bar: tabs + right buttons */}
+            <div className={`flex items-center justify-between ${stuck ? 'py-2' : 'pb-8'}`}>
+              <div className="flex-1 flex justify-center">
+                <div className="inline-flex bg-white/80 dark:bg-gray-800/60 backdrop-blur-sm border border-slate-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
+                  {tabs.map((tab) => {
+                    const Icon = tab.icon
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => onTabChange(tab.id)}
+                        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-lg text-sm font-medium transition-all ${
+                          activeTab === tab.id
+                            ? 'bg-indigo-600 text-white shadow-md'
+                            : 'text-slate-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{tab.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 ml-2">
                 <LangSwitcher />
                 <button
                   ref={themeBtnRef}
                   onClick={toggleDark}
-                  className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all"
+                  className="p-2 sm:p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all"
                   title={t('toggle_dark')}
                 >
-                  {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                  {darkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
                 </button>
                 {levelSettings && (
-                  <button onClick={onOpenSettings} className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all" title={t('change_level')}>
-                    <Settings className="h-5 w-5" />
+                  <button onClick={onOpenSettings} className="p-2 sm:p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all" title={t('change_level')}>
+                    <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
                   </button>
                 )}
-              </div>
-            </div>
-
-            {!stuck ? (
-              <div className="mb-6 text-center">
-                <div className="bg-indigo-100 dark:bg-indigo-900 p-2.5 rounded-xl inline-flex mb-3">
-                  <CalcIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                </div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{t('title')}</h1>
-                <p className="text-sm text-slate-500 dark:text-gray-400">{t('subtitle')}</p>
-                {levelSettings && (
-                  <div className="flex items-center justify-center gap-2 mt-3">
-                    <div className="inline-flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-full text-xs font-medium">
-                      <TrendingUp className="h-3.5 w-3.5" />
-                      {levelSettings.isSandbox ? t('sandbox_mode') : t('level_badge', String(levelSettings.level), String(levelSettings.percent))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : levelSettings && (
-              <div className="flex justify-center mb-2">
-                <div className="inline-flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full text-xs font-medium">
-                  <TrendingUp className="h-3 w-3" />
-                  {levelSettings.isSandbox ? t('sandbox_mode') : t('level_badge', String(levelSettings.level), String(levelSettings.percent))}
-                </div>
-              </div>
-            )}
-
-            <div className={`flex justify-center ${stuck ? 'mb-0' : 'mb-8'}`}>
-              <div className={`inline-flex bg-white/80 dark:bg-gray-800/60 backdrop-blur-sm border border-slate-200 dark:border-gray-700 rounded-xl p-1 shadow-sm transition-all ${stuck ? 'shadow-xs' : 'shadow-sm'}`}>
-                {tabs.map((tab) => {
-                  const Icon = tab.icon
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => onTabChange(tab.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-lg text-sm font-medium transition-all ${
-                        activeTab === tab.id
-                          ? 'bg-indigo-600 text-white shadow-md'
-                          : 'text-slate-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400'
-                      }`}
-                    >
-                      <Icon className={`${stuck ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
-                      <span className={stuck ? 'text-xs' : ''}>{tab.label}</span>
-                    </button>
-                  )
-                })}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`transition-all duration-300 ${stuck ? 'pt-4' : 'pt-8'}`}>
-          <div key={activeTab} className="animate-fadeIn">
-            {children}
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <div key={activeTab} className="animate-fadeIn">
+          {children}
         </div>
       </div>
     </div>
