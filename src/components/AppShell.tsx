@@ -2,12 +2,12 @@
 
 import { useState, useEffect, ReactNode, useRef } from 'react'
 import { flushSync } from 'react-dom'
-import { Calculator as CalcIcon, Wrench, Moon, Sun, Star, TrendingUp, Settings } from 'lucide-react'
+import { Calculator as CalcIcon, Wrench, ArrowUp, Moon, Sun, Star, TrendingUp, Settings } from 'lucide-react'
 import LangSwitcher from './LangSwitcher'
 import { useLang } from '@/lib/i18n/context'
 import type { LevelSettings } from '@/lib/types'
 
-export type TabId = 'calculator' | 'buildmaker'
+export type TabId = 'calculator' | 'buildmaker' | 'upgrader'
 
 interface Props {
   children: ReactNode
@@ -81,6 +81,7 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
   const tabs: { id: TabId; label: string; icon: typeof CalcIcon }[] = [
     { id: 'calculator', label: t('tab_calculator'), icon: CalcIcon },
     { id: 'buildmaker', label: t('tab_build_maker'), icon: Wrench },
+    { id: 'upgrader', label: t('tab_build_upgrader'), icon: ArrowUp },
   ]
 
   return (

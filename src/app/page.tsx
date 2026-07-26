@@ -6,6 +6,7 @@ import AppShell, { type TabId } from '@/components/AppShell'
 import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler, LevelSettings } from '@/lib/types'
 import Calculator from '@/components/calculator/Calculator'
 import BuildMaker from '@/components/BuildMaker'
+import BuildUpgrader from '@/components/BuildUpgrader'
 import LevelSettingsModal from '@/components/calculator/LevelSettingsModal'
 import { useLang } from '@/lib/i18n/context'
 
@@ -111,6 +112,7 @@ function HomeInner() {
       <AppShell activeTab={activeTab} onTabChange={setActiveTab} levelSettings={levelSettings} onOpenSettings={openSettings}>
         {activeTab === 'calculator' && <Calculator cpus={cpus} gpus={gpus} rams={rams} levelSettings={levelSettings} />}
         {activeTab === 'buildmaker' && <BuildMaker cpus={cpus} gpus={gpus} rams={rams} motherboards={motherboards} psus={psus} storageDrives={storageDrives} cases={cases} coolers={coolers} levelSettings={levelSettings} />}
+        {activeTab === 'upgrader' && <BuildUpgrader cpus={cpus} gpus={gpus} rams={rams} motherboards={motherboards} cases={cases} levelSettings={levelSettings} />}
       </AppShell>
     </>
   )
