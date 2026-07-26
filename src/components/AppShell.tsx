@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, ReactNode } from 'react'
+import { useState, useEffect, ReactNode, useRef } from 'react'
 import { flushSync } from 'react-dom'
+import Lenis from 'lenis'
 import { Calculator as CalcIcon, Wrench, ArrowUp, Moon, Sun, Star, TrendingUp, Settings } from 'lucide-react'
 import LangSwitcher from './LangSwitcher'
 import { useLang } from '@/lib/i18n/context'
@@ -30,13 +31,21 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
     return false
   })
   const [starCount, setStarCount] = useState<number | null>(null)
-  const [stuck, setStuck] = useState(false)
+  const [stuckTop, setStuckTop] = useState(false)
+  const [stuckTabs, setStuckTabs] = useState(false)
+  const staticTabsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const onScroll = () => setStuck(window.scrollY > 150)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const lenis = new Lenis()
+    const raf = (time: number) => { lenis.raf(time); requestAnimationFrame(raf) }
+    requestAnimationFrame(raf)
+    const handleScroll = () => {
+      setStuckTop(window.scrollY > 80)
+      setStuckTabs(window.scrollY > 280)
+    }
+    handleScroll()
+    lenis.on('scroll', handleScroll)
+    return () => { lenis.destroy() }
   }, [])
 
   const toggleDark = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -154,15 +163,17 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300 relative">
       
       {/* FLOATING STICKY HEADER */}
-      <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 pointer-events-none ${stuck ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+      <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 pointer-events-none ${stuckTop ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="pt-4 sm:pt-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex justify-center pointer-events-auto">
-          <div className="flex items-center gap-2 sm:gap-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-gray-700/80 rounded-[1.25rem] p-1.5 shadow-xl shadow-slate-200/50 dark:shadow-black/40 w-full max-w-fit">
+          <div className="flex items-center gap-2 sm:gap-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-gray-700/80 rounded-[1.25rem] p-1.5 shadow-xl shadow-slate-200/50 dark:shadow-black/40 w-full max-w-fit transition-all duration-500">
             <div className="hidden lg:block pl-1">
               {renderGitBadge()}
             </div>
             
-            <div className="flex bg-white/50 dark:bg-gray-800/30 rounded-xl p-0.5">
-              {renderTabs()}
+            <div className={`flex bg-white/50 dark:bg-gray-800/30 rounded-xl transition-all duration-500 p-0.5 ${stuckTabs ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+              <div className="flex items-center w-max">
+                {renderTabs()}
+              </div>
             </div>
             
             <div className="pr-1">
@@ -195,7 +206,7 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
           )}
         </div>
 
-        <div className="flex justify-center pb-8">
+        <div ref={staticTabsRef} className="flex justify-center pb-8">
           <div className="inline-flex bg-white/80 dark:bg-gray-800/60 backdrop-blur-sm border border-slate-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
             {renderTabs()}
           </div>
