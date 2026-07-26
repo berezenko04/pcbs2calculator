@@ -44,7 +44,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
   const [budget, setBudget] = useState(0)
   const [reserve, setReserve] = useState(0)
   const [targetScore, setTargetScore] = useState(0)
-  const [offset, setOffset] = useState(1000)
+  const [offset, setOffset] = useState(500)
 
   const [selectedCase, setSelectedCase] = useState<string | null>(null)
   const [selectedCPU, setSelectedCPU] = useState<string | null>(null)
@@ -60,6 +60,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
   const [searched, setSearched] = useState(false)
   const [searching, setSearching] = useState(false)
   const [budgetError, setBudgetError] = useState('')
+  const [lastCandidateCounts, setLastCandidateCounts] = useState({ cpu: 0, gpu: 0, ram: 0 })
 
   const levelSettingsKey = levelSettings ? `${levelSettings.level}-${levelSettings.percent}` : null
 
@@ -102,6 +103,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
     const ramCandidates = availableRAMs.filter(r =>
       r.id !== currentRAM.id && r.price * (ramQuantity || 1) <= available
     )
+    setLastCandidateCounts({ cpu: cpuCandidates.length, gpu: gpuCandidates.length, ram: ramCandidates.length })
 
     const found: UpgradeResult[] = []
     const oldTotalScore = currentTotalScore
@@ -257,9 +259,8 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
               noResultsText={t('no_results')}
             />
             {currentCPU && (
-              <div className="text-xs text-slate-400 dark:text-gray-500 mt-1 space-y-0.5">
-                <div>{currentCPU.cores} {t('cores')} · {currentCPU.frequency} {t('mhz')}</div>
-                <div>{t('tdp')} {currentCPU.wattage}W</div>
+              <div className="text-xs text-slate-400 dark:text-gray-500 mt-1">
+                {currentCPU.cores} {t('cores')} · {currentCPU.frequency} {t('mhz')} · TDP: {currentCPU.wattage}W
               </div>
             )}
           </div>
@@ -332,9 +333,9 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
                         <div className="relative">
                           <input type="number" min={defFreq} max={maxFreq} step={100} value={curVal}
                             onChange={(e) => { const v = e.target.value ? Math.min(Math.max(Number(e.target.value), defFreq), maxFreq) : defFreq; setFreq(v) }}
-                            className="w-20 p-1 pr-7 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-xs outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-shadow [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-20 p-1 pr-10 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-xs outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-shadow [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
-                          <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
                         </div>
                       </div>
                       <div className="flex gap-1.5">
@@ -415,6 +416,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
               <ArrowUp className="h-12 w-12 mx-auto mb-3 text-slate-400 dark:text-gray-500" />
               <h3 className="text-lg font-semibold text-slate-700 dark:text-gray-300 mb-1">{t('bu_no_results')}</h3>
               <p className="text-sm text-slate-400 dark:text-gray-500 max-w-md mx-auto">{t('bu_no_results_desc')}</p>
+              <p className="text-xs text-slate-400 dark:text-gray-500 mt-2">CPU: {lastCandidateCounts.cpu} · GPU: {lastCandidateCounts.gpu} · RAM: {lastCandidateCounts.ram}</p>
             </div>
           ) : (
             <div className="space-y-4">
