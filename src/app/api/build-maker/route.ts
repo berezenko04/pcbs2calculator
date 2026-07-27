@@ -1,6 +1,7 @@
-import { query } from '@/lib/db'
+import { queryByVersion } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler, ScoreResult } from '@/lib/types'
+import type { GameVersion } from '@/lib/gameVersion'
 
 function supportsSli(gpu: GPU): boolean {
   return gpu.double_gpu_graphics_score !== undefined
@@ -119,15 +120,17 @@ export async function POST(req: NextRequest) {
 
   const avail = budget
 
+  const version = (body.version as GameVersion) || 'pcbs2'
+
   const [cpuRows, gpuRows, ramRows, mbRows, psuRows, storageRows, caseRows, coolerRows] = await Promise.all([
-    query('SELECT * FROM cpu ORDER BY id'),
-    query('SELECT * FROM gpu ORDER BY id'),
-    query('SELECT * FROM ram ORDER BY id'),
-    query('SELECT * FROM motherboard ORDER BY id'),
-    query('SELECT * FROM psu ORDER BY id'),
-    query('SELECT * FROM storage ORDER BY id'),
-    query('SELECT * FROM cases ORDER BY id'),
-    query('SELECT * FROM coolers ORDER BY id'),
+    queryByVersion('cpu', version),
+    queryByVersion('gpu', version),
+    queryByVersion('ram', version),
+    queryByVersion('motherboard', version),
+    queryByVersion('psu', version),
+    queryByVersion('storage', version),
+    queryByVersion('cases', version),
+    queryByVersion('coolers', version),
   ])
 
   const cpus = cpuRows as unknown as CPU[]

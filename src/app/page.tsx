@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { LangProvider } from '@/lib/i18n/context'
 import AppShell, { type TabId } from '@/components/AppShell'
 import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler, LevelSettings } from '@/lib/types'
+import type { GameVersion } from '@/lib/gameVersion'
 import Calculator from '@/components/calculator/Calculator'
 import BuildMaker from '@/components/BuildMaker'
 import BuildUpgrader from '@/components/BuildUpgrader'
@@ -30,6 +31,7 @@ function HomeInner() {
   const [coolers, setCoolers] = useState<Cooler[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('calculator')
+  const [gameVersion, setGameVersion] = useState<GameVersion>('pcbs2')
 
   const initData = useMemo(() => {
     const init: { levelSettings: LevelSettings | null; showSettings: boolean; draftLevel: number; draftPercent: number; draftSandbox: boolean } =
@@ -74,28 +76,36 @@ function HomeInner() {
     setShowSettings(true)
   }, [levelSettings])
 
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/cpus').then(r => r.json()),
-      fetch('/api/gpus').then(r => r.json()),
-      fetch('/api/rams').then(r => r.json()),
-      fetch('/api/motherboard').then(r => r.json()),
-      fetch('/api/psu').then(r => r.json()),
-      fetch('/api/storage').then(r => r.json()),
-      fetch('/api/cases').then(r => r.json()),
-      fetch('/api/coolers').then(r => r.json()),
-    ]).then(([c, g, r, mb, p, s, cs, cl]) => {
-      setCpus(c)
-      setGpus(g)
-      setRams(r)
-      setMotherboards(mb)
-      setPsus(p)
-      setStorageDrives(s)
-      setCases(cs)
-      setCoolers(cl)
-      setLoading(false)
-    })
+  const loadData = useCallback(async (version: GameVersion) => {
+    setLoading(true)
+    const v = version === 'pcbs' ? '?version=pcbs' : ''
+    const [c, g, r, mb, p, s, cs, cl] = await Promise.all([
+      fetch('/api/cpus' + v).then(r => r.json()),
+      fetch('/api/gpus' + v).then(r => r.json()),
+      fetch('/api/rams' + v).then(r => r.json()),
+      fetch('/api/motherboard' + v).then(r => r.json()),
+      fetch('/api/psu' + v).then(r => r.json()),
+      fetch('/api/storage' + v).then(r => r.json()),
+      fetch('/api/cases' + v).then(r => r.json()),
+      fetch('/api/coolers' + v).then(r => r.json()),
+    ])
+    setCpus(c)
+    setGpus(g)
+    setRams(r)
+    setMotherboards(mb)
+    setPsus(p)
+    setStorageDrives(s)
+    setCases(cs)
+    setCoolers(cl)
+    setLoading(false)
   }, [])
+
+  const handleGameVersionChange = useCallback((v: GameVersion) => {
+    setGameVersion(v)
+    loadData(v)
+  }, [loadData])
+
+  useEffect(() => { loadData('pcbs2') }, [loadData])
 
   if (loading) return <LoadingFallback />
 
@@ -109,7 +119,7 @@ function HomeInner() {
           onSave={(lv, pct, sandbox) => saveSettings(lv, pct, sandbox)}
         />
       )}
-      <AppShell activeTab={activeTab} onTabChange={setActiveTab} levelSettings={levelSettings} onOpenSettings={openSettings}>
+      <AppShell activeTab={activeTab} onTabChange={setActiveTab} levelSettings={levelSettings} onOpenSettings={openSettings} gameVersion={gameVersion} onGameVersionChange={handleGameVersionChange}>
         {activeTab === 'calculator' && <Calculator cpus={cpus} gpus={gpus} rams={rams} levelSettings={levelSettings} />}
         {activeTab === 'buildmaker' && <BuildMaker cpus={cpus} gpus={gpus} rams={rams} motherboards={motherboards} psus={psus} storageDrives={storageDrives} cases={cases} coolers={coolers} levelSettings={levelSettings} />}
         {activeTab === 'upgrader' && <BuildUpgrader cpus={cpus} gpus={gpus} rams={rams} motherboards={motherboards} cases={cases} levelSettings={levelSettings} />}

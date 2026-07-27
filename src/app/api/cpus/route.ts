@@ -1,7 +1,10 @@
-import { query } from '@/lib/db'
+import { queryByVersion } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import type { GameVersion } from '@/lib/gameVersion'
 
-export async function GET() {
-  const rows = await query('SELECT * FROM cpu ORDER BY id')
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const version = (searchParams.get('version') as GameVersion) || 'pcbs2'
+  const rows = await queryByVersion('cpu', version)
   return NextResponse.json(rows)
 }

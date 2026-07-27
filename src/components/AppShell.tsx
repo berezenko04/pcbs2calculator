@@ -7,6 +7,8 @@ import { Calculator as CalcIcon, Wrench, ArrowUp, Moon, Sun, Star, TrendingUp, S
 import LangSwitcher from './LangSwitcher'
 import { useLang } from '@/lib/i18n/context'
 import type { LevelSettings } from '@/lib/types'
+import type { GameVersion } from '@/lib/gameVersion'
+import { GAME_VERSIONS } from '@/lib/gameVersion'
 
 export type TabId = 'calculator' | 'buildmaker' | 'upgrader'
 
@@ -16,9 +18,11 @@ interface Props {
   onTabChange: (tab: TabId) => void
   levelSettings: LevelSettings | null
   onOpenSettings: () => void
+  gameVersion: GameVersion
+  onGameVersionChange: (v: GameVersion) => void
 }
 
-export default function AppShell({ children, activeTab, onTabChange, levelSettings, onOpenSettings }: Props) {
+export default function AppShell({ children, activeTab, onTabChange, levelSettings, onOpenSettings, gameVersion, onGameVersionChange }: Props) {
   const { t } = useLang()
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -119,8 +123,27 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
     )
   }
 
+  const renderVersionSwitcher = () => (
+    <div className="flex bg-white/80 dark:bg-gray-800/60 border border-slate-200 dark:border-gray-700 rounded-lg p-0.5">
+      {GAME_VERSIONS.map((v) => (
+        <button
+          key={v.id}
+          onClick={() => onGameVersionChange(v.id)}
+          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+            gameVersion === v.id
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+          }`}
+        >
+          {v.short.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  )
+
   const renderActionButtons = () => (
     <div className="flex items-center gap-2">
+      {renderVersionSwitcher()}
       <LangSwitcher />
       <button
         onClick={toggleDark}

@@ -1,4 +1,5 @@
 import { Pool } from 'pg'
+import type { GameVersion } from './gameVersion'
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 
@@ -10,4 +11,13 @@ export async function query(text: string, params?: any[]) {
   } finally {
     client.release()
   }
+}
+
+export function tableName(base: string, version: GameVersion): string {
+  if (version === 'pcbs') return `v1_${base}`
+  return base
+}
+
+export async function queryByVersion(baseTable: string, version: GameVersion) {
+  return query(`SELECT * FROM ${tableName(baseTable, version)} ORDER BY id`)
 }
