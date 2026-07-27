@@ -242,6 +242,16 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
           {children}
         </div>
       </div>
+
+      {/* FOOTER */}
+      <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 pt-12">
+        <div className="text-center text-xs text-slate-400 dark:text-gray-500">
+          Developed by{' '}
+          <a href="https://github.com/berezenko04" target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 underline underline-offset-2">
+            berezenko04
+          </a>
+        </div>
+      </footer>
     </div>
   )
 }

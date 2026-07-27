@@ -14,7 +14,7 @@ export async function query(text: string, params?: any[]) {
 }
 
 export function tableName(base: string, version: GameVersion): string {
-  if (version === 'pcbs') return `v1_${base}`
+  if (version === 'pcbs2') return `v2_${base}`
   return base
 }
 
