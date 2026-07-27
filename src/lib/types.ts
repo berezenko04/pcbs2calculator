@@ -26,6 +26,11 @@ export interface CPU {
   memchannelsmultiplier?: number
   memclockmultiplier?: number
   finaladjustment?: number
+  basic_cpu_score_tsx?: number
+  coreclockmultiplier_tsx?: number
+  memchannelsmultiplier_tsx?: number
+  memclockmultiplier_tsx?: number
+  finaladjustment_tsx?: number
 }
 
 export interface GPU {

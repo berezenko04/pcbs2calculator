@@ -9,6 +9,25 @@ function supportsSli(gpu: GPU): boolean {
     && gpu.double_gpu_graphics_score !== 'false'
 }
 
+function calcCpuScoreRaw(cpu: CPU, ram: RAM, ramQty: number, baseScore: number, coreMult: number | undefined, chanMult: number | undefined, memMult: number | undefined, adj: number | undefined, cpuFreq?: number): number {
+  const freq = Number(cpuFreq && cpuFreq > 0 ? cpuFreq : cpu.frequency) || 0
+  if (baseScore === 0) return 0
+  const ramFreq = Number(Math.min(ram.frequency, cpu.default_memory_speed)) || 0
+  const a = Number(coreMult) || 0
+  const b = Number(chanMult) || 0
+  const c = Number(memMult) || 0
+  const d = Number(adj) || 0
+  const defMem = Number(cpu.default_memory_speed) || 2666
+  const sticks = Math.max(1, ramQty)
+  const maxChannels = Number(cpu.max_memory_channels) || 2
+  const channels = Math.min(sticks, maxChannels)
+  const opt = a * freq + b * maxChannels + c * defMem + d
+  const cur = a * freq + b * channels + c * ramFreq + d
+  if (opt === 0) return Math.trunc(baseScore)
+  const result = Math.trunc(baseScore * cur / opt)
+  return Number.isFinite(result) ? result : Math.trunc(baseScore)
+}
+
 function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number): number {
   const freq = Number(cpuFreq && cpuFreq > 0 ? cpuFreq : cpu.frequency) || 0
   const baseFreq = Number(cpu.frequency) || 0
@@ -20,21 +39,14 @@ function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number): num
       base += (Number(cpu.overclock_basic_cpu_score) - base) * t
     }
   }
-  if (base === 0) return 0
-  const ramFreq = Number(Math.min(ram.frequency, cpu.default_memory_speed)) || 0
-  const a = Number(cpu.coreclockmultiplier) || 0
-  const b = Number(cpu.memchannelsmultiplier) || 0
-  const c = Number(cpu.memclockmultiplier) || 0
-  const d = Number(cpu.finaladjustment) || 0
-  const defMem = Number(cpu.default_memory_speed) || 2666
-  const sticks = Math.max(1, ramQty)
-  const maxChannels = Number(cpu.max_memory_channels) || 2
-  const channels = Math.min(sticks, maxChannels)
-  const opt = a * freq + b * maxChannels + c * defMem + d
-  const cur = a * freq + b * channels + c * ramFreq + d
-  if (opt === 0) return Math.trunc(base)
-  const result = Math.trunc(base * cur / opt)
-  return Number.isFinite(result) ? result : Math.trunc(base)
+  return calcCpuScoreRaw(cpu, ram, ramQty, base, cpu.coreclockmultiplier, cpu.memchannelsmultiplier, cpu.memclockmultiplier, cpu.finaladjustment, cpuFreq)
+}
+
+function calcCpuScoreBenchmark(cpu: CPU, ram: RAM, ramQty: number, testMode: BenchmarkTest, cpuFreq?: number): number {
+  if (testMode === 'timespy_extreme' && cpu.basic_cpu_score_tsx) {
+    return calcCpuScoreRaw(cpu, ram, ramQty, cpu.basic_cpu_score_tsx, cpu.coreclockmultiplier_tsx, cpu.memchannelsmultiplier_tsx, cpu.memclockmultiplier_tsx, cpu.finaladjustment_tsx, cpuFreq)
+  }
+  return calcCpuScore(cpu, ram, ramQty, cpuFreq)
 }
 
 const SCALE_TSE = 39.46
@@ -84,7 +96,7 @@ function getRank(totalScore: number): ScoreResult['rank'] {
 
 function estimateScore(cpu: CPU, gpu: GPU, ram: RAM, ramQty: number, gpuQty: number, cpuOc: boolean, gpuOc: boolean, testMode?: BenchmarkTest): ScoreResult {
   const cpuFreq = cpuOc && cpu.can_overclock && cpu.max_freq ? cpu.max_freq : cpu.frequency
-  const cpuScore = calcCpuScore(cpu, ram, ramQty, cpuOc ? cpuFreq : undefined)
+  const cpuScore = calcCpuScoreBenchmark(cpu, ram, ramQty, testMode || 'standard', cpuOc ? cpuFreq : undefined)
   const gpuScore = testMode && testMode !== 'standard'
     ? calcGpuScoreBenchmark(gpu, testMode, gpuOc ? gpu.gpu_max_clock : undefined, gpuOc ? gpu.gpu_max_mem_clock : undefined)
     : calcGpuScore(gpu, gpuQty)
@@ -267,7 +279,7 @@ export async function POST(req: NextRequest) {
   const cpuCount = Math.min(cpuCandidates.length, 8)
   const MAX_PER_CPU = Math.ceil(MAX_TOTAL / cpuCount)
 
-  const cpuValue = (c: CPU) => (Number(c.basic_cpu_score) || 0) / (Number(c.price) || 1)
+  const cpuValue = (c: CPU) => (testMode !== 'standard' && c.basic_cpu_score_tsx ? Number(c.basic_cpu_score_tsx) : Number(c.basic_cpu_score) || 0) / (Number(c.price) || 1)
   const gpuValue = (g: GPU) => {
     const score = testMode !== 'standard'
       ? calcGpuScoreBenchmark(g as GPU, testMode as BenchmarkTest, gpuOc ? g.gpu_max_clock : undefined, gpuOc ? g.gpu_max_mem_clock : undefined)

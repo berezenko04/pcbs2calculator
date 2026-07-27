@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import clsx from 'clsx'
 import { Calculator as CalcIcon, Cpu, Gpu, MemoryStick, TrendingUp } from 'lucide-react'
 import { useLang } from '@/lib/i18n/context'
-import { calcCpuScore, calcGpuScore, calcGpuScoreBenchmark, calcTotalScore, getRank, supportsSli, isLocked, formatNumber } from '@/lib/calculator'
+import { calcCpuScoreBenchmark, calcGpuScore, calcGpuScoreBenchmark, calcTotalScore, getRank, supportsSli, isLocked, formatNumber } from '@/lib/calculator'
 import type { CPU, GPU, RAM, CalculatorState, LevelSettings, ScoreResult, BenchmarkTest } from '@/lib/types'
 import Slider from '@/components/ui/Slider'
 import SearchableSelect from '@/components/ui/SearchableSelect'
@@ -57,7 +57,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
   let cpuScore = 0, gpuScore = 0, totalScore = 0
   let rank: ScoreResult['rank'] = 'Error'
   if (selectedCPU && selectedGPU && selectedRAM) {
-    cpuScore = calcCpuScore(selectedCPU, selectedRAM, state.ramQuantity || 1, state.cpuFreq || undefined, state.effectiveRamFreq ?? undefined)
+    cpuScore = calcCpuScoreBenchmark(selectedCPU, selectedRAM, state.ramQuantity || 1, state.testMode || 'standard', state.cpuFreq || undefined, state.effectiveRamFreq ?? undefined)
     gpuScore = state.testMode && state.testMode !== 'standard'
       ? calcGpuScoreBenchmark(selectedGPU, state.testMode, state.gpuCoreFreq || undefined, state.gpuMemFreq || undefined, state.gpuQuantity || 1)
       : calcGpuScore(selectedGPU, state.gpuCoreFreq || undefined, state.gpuMemFreq || undefined, state.gpuQuantity || 1)

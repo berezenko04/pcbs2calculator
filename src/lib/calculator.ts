@@ -6,6 +6,51 @@ export function supportsSli(gpu: GPU): boolean {
     && gpu.double_gpu_graphics_score !== 'false'
 }
 
+export function calcCpuScoreBenchmark(cpu: CPU, ram: RAM, ramQty: number, testMode: BenchmarkTest, cpuFreq?: number, effectiveRamFreq?: number): number {
+  if (testMode === 'timespy_extreme' && cpu.basic_cpu_score_tsx) {
+    return calcCpuScoreRaw(
+      cpu, ram, ramQty,
+      cpu.basic_cpu_score_tsx,
+      cpu.coreclockmultiplier_tsx,
+      cpu.memchannelsmultiplier_tsx,
+      cpu.memclockmultiplier_tsx,
+      cpu.finaladjustment_tsx,
+      cpuFreq, effectiveRamFreq
+    )
+  }
+  return calcCpuScore(cpu, ram, ramQty, cpuFreq, effectiveRamFreq)
+}
+
+function calcCpuScoreRaw(
+  cpu: CPU, ram: RAM, ramQty: number,
+  baseScore: number,
+  coreMult: number | undefined,
+  chanMult: number | undefined,
+  memMult: number | undefined,
+  adj: number | undefined,
+  cpuFreq?: number, effectiveRamFreq?: number
+): number {
+  const freq = Number(cpuFreq && cpuFreq > 0 ? cpuFreq : cpu.frequency) || 0
+  if (baseScore === 0) return 0
+
+  const ramFreq = Number(effectiveRamFreq ?? Math.min(ram.frequency, cpu.default_memory_speed)) || 0
+  const a = Number(coreMult) || 0
+  const b = Number(chanMult) || 0
+  const c = Number(memMult) || 0
+  const d = Number(adj) || 0
+  const defMem = Number(cpu.default_memory_speed) || 2666
+  const sticks = Math.max(1, ramQty)
+  const maxChannels = Number(cpu.max_memory_channels) || 2
+  const channels = Math.min(sticks, maxChannels)
+
+  const opt = a * freq + b * maxChannels + c * defMem + d
+  const cur = a * freq + b * channels + c * ramFreq + d
+
+  if (opt === 0) return Math.trunc(baseScore)
+  const result = Math.trunc(baseScore * cur / opt)
+  return Number.isFinite(result) ? result : Math.trunc(baseScore)
+}
+
 export function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number, effectiveRamFreq?: number): number {
   const freq = Number(cpuFreq && cpuFreq > 0 ? cpuFreq : cpu.frequency) || 0
   const baseFreq = Number(cpu.frequency) || 0
@@ -17,24 +62,7 @@ export function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: numbe
       base += (Number(cpu.overclock_basic_cpu_score) - base) * t
     }
   }
-  if (base === 0) return 0
-
-  const ramFreq = Number(effectiveRamFreq ?? Math.min(ram.frequency, cpu.default_memory_speed)) || 0
-  const a = Number(cpu.coreclockmultiplier) || 0
-  const b = Number(cpu.memchannelsmultiplier) || 0
-  const c = Number(cpu.memclockmultiplier) || 0
-  const d = Number(cpu.finaladjustment) || 0
-  const defMem = Number(cpu.default_memory_speed) || 2666
-  const sticks = Math.max(1, ramQty)
-  const maxChannels = Number(cpu.max_memory_channels) || 2
-  const channels = Math.min(sticks, maxChannels)
-
-  const opt = a * freq + b * maxChannels + c * defMem + d
-  const cur = a * freq + b * channels + c * ramFreq + d
-
-  if (opt === 0) return Math.trunc(base)
-  const result = Math.trunc(base * cur / opt)
-  return Number.isFinite(result) ? result : Math.trunc(base)
+  return calcCpuScoreRaw(cpu, ram, ramQty, base, cpu.coreclockmultiplier, cpu.memchannelsmultiplier, cpu.memclockmultiplier, cpu.finaladjustment, cpuFreq, effectiveRamFreq)
 }
 
 export function calcTotalScore(cpuScore: number, gpuScore: number): number {
@@ -158,8 +186,8 @@ export function estimateBuildScore(
     : Math.min(ram.frequency, cpu.default_memory_speed)
 
   const cpuScore = cpuOc
-    ? calcCpuScore(cpu, ram, ramQty, cpuFreq, effectiveRamFreq)
-    : calcCpuScore(cpu, ram, ramQty, undefined, effectiveRamFreq)
+    ? calcCpuScoreBenchmark(cpu, ram, ramQty, testMode || 'standard', cpuFreq, effectiveRamFreq)
+    : calcCpuScoreBenchmark(cpu, ram, ramQty, testMode || 'standard', undefined, effectiveRamFreq)
   const gpuCore = gpuOc ? gpu.gpu_max_clock : undefined
   const gpuMem = gpuOc ? gpu.gpu_max_mem_clock : undefined
   const gpuScore = testMode && testMode !== 'standard'
