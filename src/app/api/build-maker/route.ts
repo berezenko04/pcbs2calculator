@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
 
   const avail = budget
 
-  const version = (body.version as GameVersion) || 'pcbs2'
+  const version = (body.version as GameVersion) || 'pcbs'
 
   const [cpuRows, gpuRows, ramRows, mbRows, psuRows, storageRows, caseRows, coolerRows] = await Promise.all([
     queryByVersion('cpu', version),

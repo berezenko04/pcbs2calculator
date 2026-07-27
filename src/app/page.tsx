@@ -31,7 +31,7 @@ function HomeInner() {
   const [coolers, setCoolers] = useState<Cooler[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('calculator')
-  const [gameVersion, setGameVersion] = useState<GameVersion>('pcbs2')
+  const [gameVersion, setGameVersion] = useState<GameVersion>('pcbs')
 
   const initData = useMemo(() => {
     const init: { levelSettings: LevelSettings | null; showSettings: boolean; draftLevel: number; draftPercent: number; draftSandbox: boolean } =
@@ -78,16 +78,16 @@ function HomeInner() {
 
   const loadData = useCallback(async (version: GameVersion) => {
     setLoading(true)
-    const v = version === 'pcbs' ? '?version=pcbs' : ''
+    const q = `?version=${version}`
     const [c, g, r, mb, p, s, cs, cl] = await Promise.all([
-      fetch('/api/cpus' + v).then(r => r.json()),
-      fetch('/api/gpus' + v).then(r => r.json()),
-      fetch('/api/rams' + v).then(r => r.json()),
-      fetch('/api/motherboard' + v).then(r => r.json()),
-      fetch('/api/psu' + v).then(r => r.json()),
-      fetch('/api/storage' + v).then(r => r.json()),
-      fetch('/api/cases' + v).then(r => r.json()),
-      fetch('/api/coolers' + v).then(r => r.json()),
+      fetch('/api/cpus' + q).then(r => r.json()),
+      fetch('/api/gpus' + q).then(r => r.json()),
+      fetch('/api/rams' + q).then(r => r.json()),
+      fetch('/api/motherboard' + q).then(r => r.json()),
+      fetch('/api/psu' + q).then(r => r.json()),
+      fetch('/api/storage' + q).then(r => r.json()),
+      fetch('/api/cases' + q).then(r => r.json()),
+      fetch('/api/coolers' + q).then(r => r.json()),
     ])
     setCpus(c)
     setGpus(g)
@@ -105,7 +105,7 @@ function HomeInner() {
     loadData(v)
   }, [loadData])
 
-  useEffect(() => { loadData('pcbs2') }, [loadData])
+  useEffect(() => { loadData('pcbs') }, [loadData])
 
   if (loading) return <LoadingFallback />
 

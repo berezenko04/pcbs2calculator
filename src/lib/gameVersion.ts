@@ -6,6 +6,6 @@ export const GAME_VERSIONS: { id: GameVersion; label: string; short: string }[] 
 ]
 
 export function gameTable(table: string, version: GameVersion): string {
-  if (version === 'pcbs2') return table
-  return `v1_${table}`
+  if (version === 'pcbs2') return `v2_${table}`
+  return table
 }
