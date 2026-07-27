@@ -60,9 +60,10 @@ interface Props {
   cases: Case[]
   coolers: Cooler[]
   levelSettings: LevelSettings | null
+  gameVersion?: string
 }
 
-export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, storageDrives, cases, coolers, levelSettings }: Props) {
+export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, storageDrives, cases, coolers, levelSettings, gameVersion }: Props) {
   const { t } = useLang()
 
   const [mode, setMode] = useState<'simple' | 'full'>('simple')
@@ -234,6 +235,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
           level: levelSettings?.level ?? 0,
           levelPercent: levelSettings?.percent ?? 0,
           levelSandbox: levelSettings?.isSandbox ?? false,
+          version: gameVersion || 'pcbs',
         }),
       })
       const data = await res.json()
@@ -245,7 +247,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
     }
   }
 
-  const doSearch = useCallback(async () => {
+  const doSearch = async () => {
     if (budget <= 0) {
       setBudgetError(t('bm_enter_budget'))
       setTimeout(() => setBudgetError(''), 2500)
@@ -265,13 +267,10 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
       console.error(e)
     }
     setSearching(false)
-  }, [mode, budget, remaining, targetScore, scoreOffset, socket, cpuBrand, gpuBrand, useSli, cpuOc, gpuOc, minRamGb, minStorageGb, moboSize, storageType, cpus, gpus, rams, levelSettings])
-
-  // UI render below
+  }
 
   return (
     <div>
-      {/* Mode toggle */}
       <div className="flex justify-center mb-6">
         <div className="inline-flex bg-white/80 dark:bg-gray-800/60 backdrop-blur-sm border border-slate-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
           <button
@@ -344,7 +343,6 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         </div>
       </div>
 
-      {/* Search button */}
       <div className="text-center mb-8">
         <button
           onClick={doSearch}
@@ -361,7 +359,6 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
         )}
       </div>
 
-      {/* Results */}
       {searched && (
         <div>
           {results.length === 0 ? (

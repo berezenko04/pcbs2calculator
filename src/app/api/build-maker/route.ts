@@ -1,6 +1,6 @@
 import { queryByVersion } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
-import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler, ScoreResult } from '@/lib/types'
+import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler, ScoreResult, BenchmarkTest } from '@/lib/types'
 import type { GameVersion } from '@/lib/gameVersion'
 
 function supportsSli(gpu: GPU): boolean {
@@ -37,6 +37,33 @@ function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number): num
   return Number.isFinite(result) ? result : Math.trunc(base)
 }
 
+const SCALE_TSE = 39.46
+const SCALE_PR = 227.14
+const SCALE_SW = 100
+
+function calcGpuScoreBenchmark(gpu: GPU, testMode: BenchmarkTest, coreFreq?: number, memFreq?: number): number {
+  const core = Number(coreFreq && coreFreq > 0 ? coreFreq : gpu.base_core_clock_freq) || 0
+  const mem = Number(memFreq && memFreq > 0 ? memFreq : gpu.base_mem_clock_freq) || 0
+
+  if (testMode === 'timespy_extreme') {
+    if (!gpu.allow_timespy_extreme) return 0
+    const gt1 = (Number(gpu.gt1_single_core_clock_multiplier) || 0) * core + (Number(gpu.gt1_single_mem_clock_multiplier) || 0) * mem + (Number(gpu.gt1_single_benchmark_adjustment) || 0)
+    const gt2 = (Number(gpu.gt2_single_core_clock_multiplier) || 0) * core + (Number(gpu.gt2_single_mem_clock_multiplier) || 0) * mem + (Number(gpu.gt2_single_benchmark_adjustment) || 0)
+    return Math.trunc(SCALE_TSE * (gt1 + gt2))
+  }
+  if (testMode === 'port_royal') {
+    if (!gpu.allow_port_royal) return 0
+    const pr = (Number(gpu.pr_single_core_clock_multiplier) || 0) * core + (Number(gpu.pr_single_mem_clock_multiplier) || 0) * mem + (Number(gpu.pr_single_benchmark_adjustment) || 0)
+    return Math.trunc(SCALE_PR * pr)
+  }
+  if (testMode === 'speedway') {
+    if (!gpu.allow_speedway) return 0
+    const sw = (Number(gpu.speedway_core_clock_coefficient) || 0) * core + (Number(gpu.speedway_memory_clock_coefficient) || 0) * mem + (Number(gpu.speedway_constant) || 0)
+    return Math.trunc(SCALE_SW * sw)
+  }
+  return 0
+}
+
 function calcGpuScore(gpu: GPU, gpuQuantity: number): number {
   const isDual = gpuQuantity === 2 && supportsSli(gpu)
   return isDual ? Number(gpu.double_gpu_graphics_score) || 0 : Number(gpu.single_gpu_graphics_score) || 0
@@ -55,10 +82,12 @@ function getRank(totalScore: number): ScoreResult['rank'] {
   return 'Budget'
 }
 
-function estimateScore(cpu: CPU, gpu: GPU, ram: RAM, ramQty: number, gpuQty: number, cpuOc: boolean, gpuOc: boolean): ScoreResult {
+function estimateScore(cpu: CPU, gpu: GPU, ram: RAM, ramQty: number, gpuQty: number, cpuOc: boolean, gpuOc: boolean, testMode?: BenchmarkTest): ScoreResult {
   const cpuFreq = cpuOc && cpu.can_overclock && cpu.max_freq ? cpu.max_freq : cpu.frequency
   const cpuScore = calcCpuScore(cpu, ram, ramQty, cpuOc ? cpuFreq : undefined)
-  const gpuScore = calcGpuScore(gpu, gpuQty)
+  const gpuScore = testMode && testMode !== 'standard'
+    ? calcGpuScoreBenchmark(gpu, testMode, gpuOc ? gpu.gpu_max_clock : undefined, gpuOc ? gpu.gpu_max_mem_clock : undefined)
+    : calcGpuScore(gpu, gpuQty)
   const totalScore = calcTotalScore(cpuScore, gpuScore)
   return { cpuScore, gpuScore, totalScore, rank: getRank(totalScore) }
 }
@@ -114,6 +143,7 @@ export async function POST(req: NextRequest) {
     useSli = false, cpuOc = false, gpuOc = false, minRamGb = 0, minStorageGb = 0,
     moboSize = '', storageType = '',
     level = 0, levelPercent = 0, levelSandbox = false,
+    testMode = 'standard',
   } = body
 
   if (budget <= 0) return NextResponse.json({ builds: [] })
@@ -238,7 +268,12 @@ export async function POST(req: NextRequest) {
   const MAX_PER_CPU = Math.ceil(MAX_TOTAL / cpuCount)
 
   const cpuValue = (c: CPU) => (Number(c.basic_cpu_score) || 0) / (Number(c.price) || 1)
-  const gpuValue = (g: GPU) => (Number(g.single_gpu_graphics_score) || 0) / (Number(g.price) || 1)
+  const gpuValue = (g: GPU) => {
+    const score = testMode !== 'standard'
+      ? calcGpuScoreBenchmark(g as GPU, testMode as BenchmarkTest, gpuOc ? g.gpu_max_clock : undefined, gpuOc ? g.gpu_max_mem_clock : undefined)
+      : Number(g.single_gpu_graphics_score) || 0
+    return score / (Number(g.price) || 1)
+  }
 
   const cpuSorted = [...cpuCandidates].sort((a, b) => cpuValue(b) - cpuValue(a))
   const gpuSorted = [...gpuCandidates].sort((a, b) => gpuValue(b) - gpuValue(a))
@@ -263,7 +298,7 @@ export async function POST(req: NextRequest) {
         if (seen.has(coreKey)) continue
         seen.add(coreKey)
 
-        const score = estimateScore(cpu, gpu, ram, ramQty, gpuQty, cpuOc, gpuOc)
+        const score = estimateScore(cpu, gpu, ram, ramQty, gpuQty, cpuOc, gpuOc, testMode as BenchmarkTest)
         if (score.totalScore < targetScore || (scoreOffset > 0 && score.totalScore > targetScore + scoreOffset)) continue
 
         const cpuPrice = Number(cpu.price)

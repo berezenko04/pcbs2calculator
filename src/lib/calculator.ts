@@ -1,4 +1,4 @@
-import type { CPU, GPU, RAM, ScoreResult } from './types'
+import type { CPU, GPU, RAM, ScoreResult, BenchmarkTest } from './types'
 
 export function supportsSli(gpu: GPU): boolean {
   return gpu.double_gpu_graphics_score !== undefined
@@ -43,6 +43,73 @@ export function calcTotalScore(cpuScore: number, gpuScore: number): number {
   return Math.trunc(1 / (w / cpuScore + (1 - w) / gpuScore))
 }
 
+const SCALE_TSE = 39.46
+const SCALE_PR = 227.14
+const SCALE_SW = 100
+
+function calcGpuScoreMultiplier(
+  gpu: GPU, coreFreq: number, memFreq: number, gpuQuantity: number,
+  coreMultKey: 'gt1_single_core_clock_multiplier' | 'pr_single_core_clock_multiplier',
+  memMultKey: 'gt1_single_mem_clock_multiplier' | 'pr_single_mem_clock_multiplier',
+  adjKey: 'gt1_single_benchmark_adjustment' | 'pr_single_benchmark_adjustment' |
+          'gt2_single_benchmark_adjustment' | 'speedway_constant',
+  scale: number,
+  secondCoreMultKey?: 'gt2_single_core_clock_multiplier',
+  secondMemMultKey?: 'gt2_single_mem_clock_multiplier',
+  secondAdjKey?: 'gt2_single_benchmark_adjustment',
+): number {
+  const core = Number(coreFreq) || 0
+  const mem = Number(memFreq) || 0
+  let total = 0
+
+  const c1 = Number((gpu as any)[coreMultKey]) || 0
+  const m1 = Number((gpu as any)[memMultKey]) || 0
+  const a1 = Number((gpu as any)[adjKey]) || 0
+  total += c1 * core + m1 * mem + a1
+
+  if (secondCoreMultKey && secondMemMultKey && secondAdjKey) {
+    const c2 = Number((gpu as any)[secondCoreMultKey]) || 0
+    const m2 = Number((gpu as any)[secondMemMultKey]) || 0
+    const a2 = Number((gpu as any)[secondAdjKey]) || 0
+    total += c2 * core + m2 * mem + a2
+  }
+
+  return Math.trunc(scale * total)
+}
+
+export function calcGpuScoreBenchmark(gpu: GPU, testMode: BenchmarkTest, coreFreq?: number, memFreq?: number, gpuQuantity?: number): number {
+  const core = Number(coreFreq && coreFreq > 0 ? coreFreq : gpu.base_core_clock_freq) || 0
+  const mem = Number(memFreq && memFreq > 0 ? memFreq : gpu.base_mem_clock_freq) || 0
+
+  if (testMode === 'standard') {
+    return calcGpuScore(gpu, coreFreq, memFreq, gpuQuantity)
+  }
+
+  if (testMode === 'timespy_extreme') {
+    if (!gpu.allow_timespy_extreme) return 0
+    return calcGpuScoreMultiplier(gpu, core, mem, gpuQuantity || 1,
+      'gt1_single_core_clock_multiplier', 'gt1_single_mem_clock_multiplier', 'gt1_single_benchmark_adjustment',
+      SCALE_TSE,
+      'gt2_single_core_clock_multiplier', 'gt2_single_mem_clock_multiplier', 'gt2_single_benchmark_adjustment')
+  }
+
+  if (testMode === 'port_royal') {
+    if (!gpu.allow_port_royal) return 0
+    return calcGpuScoreMultiplier(gpu, core, mem, gpuQuantity || 1,
+      'pr_single_core_clock_multiplier', 'pr_single_mem_clock_multiplier', 'pr_single_benchmark_adjustment',
+      SCALE_PR)
+  }
+
+  if (testMode === 'speedway') {
+    if (!gpu.allow_speedway) return 0
+    return calcGpuScoreMultiplier(gpu, core, mem, gpuQuantity || 1,
+      'speedway_core_clock_coefficient' as any, 'speedway_memory_clock_coefficient' as any, 'speedway_constant' as any,
+      SCALE_SW)
+  }
+
+  return 0
+}
+
 export function calcGpuScore(gpu: GPU, coreFreq?: number, memFreq?: number, gpuQuantity?: number): number {
   const isDual = gpuQuantity === 2 && supportsSli(gpu)
   const baseScore = isDual
@@ -82,7 +149,8 @@ export function getRank(totalScore: number): ScoreResult['rank'] {
 export function estimateBuildScore(
   cpu: CPU, gpu: GPU, ram: RAM,
   ramQty: number, gpuQuantity: number,
-  cpuOc: boolean, gpuOc: boolean
+  cpuOc: boolean, gpuOc: boolean,
+  testMode?: BenchmarkTest
 ): ScoreResult {
   const cpuFreq = cpuOc && cpu.can_overclock && cpu.max_freq ? cpu.max_freq : cpu.frequency
   const effectiveRamFreq = ram.max_speed
@@ -92,9 +160,13 @@ export function estimateBuildScore(
   const cpuScore = cpuOc
     ? calcCpuScore(cpu, ram, ramQty, cpuFreq, effectiveRamFreq)
     : calcCpuScore(cpu, ram, ramQty, undefined, effectiveRamFreq)
-  const gpuScore = gpuOc
-    ? calcGpuScore(gpu, gpu.gpu_max_clock, gpu.gpu_max_mem_clock, gpuQuantity)
-    : calcGpuScore(gpu, undefined, undefined, gpuQuantity)
+  const gpuCore = gpuOc ? gpu.gpu_max_clock : undefined
+  const gpuMem = gpuOc ? gpu.gpu_max_mem_clock : undefined
+  const gpuScore = testMode && testMode !== 'standard'
+    ? calcGpuScoreBenchmark(gpu, testMode, gpuCore, gpuMem, gpuQuantity)
+    : (gpuOc
+      ? calcGpuScore(gpu, gpuCore, gpuMem, gpuQuantity)
+      : calcGpuScore(gpu, undefined, undefined, gpuQuantity))
   const totalScore = calcTotalScore(cpuScore, gpuScore)
   const rank = getRank(totalScore)
 

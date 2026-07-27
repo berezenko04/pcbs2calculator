@@ -189,7 +189,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
       return
     }
     if (targetScore <= 0) {
-      setBudgetError(t('bm_target_score'))
+      setBudgetError('Please enter a target score')
       setTimeout(() => setBudgetError(''), 2500)
       return
     }

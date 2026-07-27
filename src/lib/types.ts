@@ -49,7 +49,33 @@ export interface GPU {
   base_mem_clock_freq?: number
   gpu_max_clock?: number
   gpu_max_mem_clock?: number
+  allow_timespy_extreme?: boolean
+  gt1_single_core_clock_multiplier?: number
+  gt1_single_mem_clock_multiplier?: number
+  gt1_single_benchmark_adjustment?: number
+  gt2_single_core_clock_multiplier?: number
+  gt2_single_mem_clock_multiplier?: number
+  gt2_single_benchmark_adjustment?: number
+  gt1_dual_core_clock_multiplier?: number
+  gt1_dual_mem_clock_multiplier?: number
+  gt1_dual_benchmark_adjustment?: number
+  gt2_dual_core_clock_multiplier?: number
+  gt2_dual_mem_clock_multiplier?: number
+  gt2_dual_benchmark_adjustment?: number
+  allow_port_royal?: boolean
+  pr_single_core_clock_multiplier?: number
+  pr_single_mem_clock_multiplier?: number
+  pr_single_benchmark_adjustment?: number
+  pr_dual_core_clock_multiplier?: number
+  pr_dual_mem_clock_multiplier?: number
+  pr_dual_benchmark_adjustment?: number
+  allow_speedway?: boolean
+  speedway_core_clock_coefficient?: number
+  speedway_memory_clock_coefficient?: number
+  speedway_constant?: number
 }
+
+export type BenchmarkTest = 'standard' | 'timespy_extreme' | 'port_royal' | 'speedway'
 
 export interface RAM {
   id: string
@@ -162,6 +188,7 @@ export interface CalculatorState {
   gpuCoreFreq: number
   gpuMemFreq: number
   effectiveRamFreq: number | null
+  testMode?: BenchmarkTest
 }
 
 export interface LevelSettings {

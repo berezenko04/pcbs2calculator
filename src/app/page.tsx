@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { LangProvider } from '@/lib/i18n/context'
 import AppShell, { type TabId } from '@/components/AppShell'
 import type { CPU, GPU, RAM, Motherboard, PSU, StorageDrive, Case, Cooler, LevelSettings } from '@/lib/types'
@@ -10,6 +10,21 @@ import BuildMaker from '@/components/BuildMaker'
 import BuildUpgrader from '@/components/BuildUpgrader'
 import LevelSettingsModal from '@/components/calculator/LevelSettingsModal'
 import { useLang } from '@/lib/i18n/context'
+
+function levelKey(version: GameVersion): string {
+  return 'pcbs2_level_' + version
+}
+
+function loadLevelForVersion(version: GameVersion): LevelSettings | null {
+  try {
+    const raw = localStorage.getItem(levelKey(version))
+    if (raw) {
+      const parsed = JSON.parse(raw) as LevelSettings
+      if (typeof parsed.level === 'number' && typeof parsed.percent === 'number') return parsed
+    }
+  } catch {}
+  return null
+}
 
 function LoadingFallback() {
   const { t } = useLang()
@@ -31,43 +46,47 @@ function HomeInner() {
   const [coolers, setCoolers] = useState<Cooler[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('calculator')
-  const [gameVersion, setGameVersion] = useState<GameVersion>('pcbs')
 
-  const initData = useMemo(() => {
-    const init: { levelSettings: LevelSettings | null; showSettings: boolean; draftLevel: number; draftPercent: number; draftSandbox: boolean } =
-      { levelSettings: null, showSettings: false, draftLevel: 1, draftPercent: 0, draftSandbox: false }
-    try {
-      const raw = localStorage.getItem('pcbs2_level')
-      if (raw) {
-        const parsed = JSON.parse(raw) as LevelSettings
-        if (typeof parsed.level === 'number' && typeof parsed.percent === 'number') {
-          init.levelSettings = parsed
-          init.draftLevel = parsed.level
-          init.draftPercent = parsed.percent
-          init.draftSandbox = parsed.isSandbox ?? false
-          return init
-        }
-      }
-    } catch {}
-    init.showSettings = true
-    return init
-  }, [])
+  const [gameVersion, setGameVersion] = useState<GameVersion>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('pcbs2_game_version') as GameVersion | null
+      if (stored && ['pcbs', 'pcbs2'].includes(stored)) return stored
+    }
+    return 'pcbs'
+  })
 
-  const [levelSettings, setLevelSettings] = useState<LevelSettings | null>(initData.levelSettings)
-  const [showSettings, setShowSettings] = useState(initData.showSettings)
-  const [draftLevel, setDraftLevel] = useState(initData.draftLevel)
-  const [draftPercent, setDraftPercent] = useState(initData.draftPercent)
-  const [draftSandbox, setDraftSandbox] = useState(initData.draftSandbox)
+  const [levelSettings, setLevelSettings] = useState<LevelSettings | null>(() => {
+    return loadLevelForVersion(gameVersion as GameVersion)
+  })
+
+  const [showSettings, setShowSettings] = useState(() => {
+    return loadLevelForVersion(gameVersion as GameVersion) === null
+  })
+
+  const [draftLevel, setDraftLevel] = useState(() => {
+    const saved = loadLevelForVersion(gameVersion as GameVersion)
+    return saved?.level ?? 1
+  })
+
+  const [draftPercent, setDraftPercent] = useState(() => {
+    const saved = loadLevelForVersion(gameVersion as GameVersion)
+    return saved?.percent ?? 0
+  })
+
+  const [draftSandbox, setDraftSandbox] = useState(() => {
+    const saved = loadLevelForVersion(gameVersion as GameVersion)
+    return saved?.isSandbox ?? false
+  })
 
   const allLevels = [...cpus, ...gpus, ...rams].map((c) => Number(c.level)).filter((l) => !isNaN(l))
   const maxLevel = allLevels.length > 0 ? Math.max(...allLevels) : 30
 
   const saveSettings = useCallback((lvl: number, pct: number, sandbox: boolean) => {
     const s: LevelSettings = { level: lvl, percent: pct, isSandbox: sandbox }
-    localStorage.setItem('pcbs2_level', JSON.stringify(s))
+    localStorage.setItem(levelKey(gameVersion), JSON.stringify(s))
     setLevelSettings(s)
     setShowSettings(false)
-  }, [])
+  }, [gameVersion])
 
   const openSettings = useCallback(() => {
     setDraftLevel(levelSettings?.level ?? 1)
@@ -97,15 +116,25 @@ function HomeInner() {
     setStorageDrives(s)
     setCases(cs)
     setCoolers(cl)
+
+    const saved = loadLevelForVersion(version)
+    if (saved) {
+      setLevelSettings(saved)
+      setShowSettings(false)
+    } else {
+      setLevelSettings(null)
+      setShowSettings(true)
+    }
     setLoading(false)
   }, [])
 
   const handleGameVersionChange = useCallback((v: GameVersion) => {
     setGameVersion(v)
+    localStorage.setItem('pcbs2_game_version', v)
     loadData(v)
   }, [loadData])
 
-  useEffect(() => { loadData('pcbs') }, [loadData])
+  useEffect(() => { loadData(gameVersion) }, [])
 
   if (loading) return <LoadingFallback />
 
@@ -121,7 +150,7 @@ function HomeInner() {
       )}
       <AppShell activeTab={activeTab} onTabChange={setActiveTab} levelSettings={levelSettings} onOpenSettings={openSettings} gameVersion={gameVersion} onGameVersionChange={handleGameVersionChange}>
         {activeTab === 'calculator' && <Calculator cpus={cpus} gpus={gpus} rams={rams} levelSettings={levelSettings} />}
-        {activeTab === 'buildmaker' && <BuildMaker cpus={cpus} gpus={gpus} rams={rams} motherboards={motherboards} psus={psus} storageDrives={storageDrives} cases={cases} coolers={coolers} levelSettings={levelSettings} />}
+        {activeTab === 'buildmaker' && <BuildMaker cpus={cpus} gpus={gpus} rams={rams} motherboards={motherboards} psus={psus} storageDrives={storageDrives} cases={cases} coolers={coolers} levelSettings={levelSettings} gameVersion={gameVersion} />}
         {activeTab === 'upgrader' && <BuildUpgrader cpus={cpus} gpus={gpus} rams={rams} motherboards={motherboards} cases={cases} levelSettings={levelSettings} />}
       </AppShell>
     </>

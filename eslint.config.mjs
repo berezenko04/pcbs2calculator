@@ -1,7 +1,4 @@
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-
-const nextConfig = require("eslint-config-next");
+import nextConfig from "eslint-config-next";
 
 const eslintConfig = [
   ...nextConfig,

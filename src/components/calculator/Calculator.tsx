@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import clsx from 'clsx'
 import { Calculator as CalcIcon, Cpu, Gpu, MemoryStick, TrendingUp } from 'lucide-react'
 import { useLang } from '@/lib/i18n/context'
-import { calcCpuScore, calcGpuScore, calcTotalScore, getRank, supportsSli, isLocked, formatNumber } from '@/lib/calculator'
-import type { CPU, GPU, RAM, CalculatorState, LevelSettings, ScoreResult } from '@/lib/types'
+import { calcCpuScore, calcGpuScore, calcGpuScoreBenchmark, calcTotalScore, getRank, supportsSli, isLocked, formatNumber } from '@/lib/calculator'
+import type { CPU, GPU, RAM, CalculatorState, LevelSettings, ScoreResult, BenchmarkTest } from '@/lib/types'
 import Slider from '@/components/ui/Slider'
 import SearchableSelect from '@/components/ui/SearchableSelect'
 
@@ -22,28 +22,32 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
     selectedCPU: null, selectedGPU: null, selectedRAM: null,
     ramQuantity: 1, cpuFreq: 0, gpuQuantity: 1,
     gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null,
+    testMode: 'standard',
   })
 
-  const availableCPUs = levelSettings?.isSandbox ? cpus : levelSettings ? cpus.filter((c) => !isLocked(c.level, c.percent_through, levelSettings.level, levelSettings.percent)) : cpus
-  const availableGPUs = levelSettings?.isSandbox ? gpus : levelSettings ? gpus.filter((g) => !isLocked(g.level, g.percent_through, levelSettings.level, levelSettings.percent)) : gpus
-  const availableRAMs = levelSettings?.isSandbox ? rams : levelSettings ? rams.filter((r) => !isLocked(r.level, r.percent_through, levelSettings.level, levelSettings.percent)) : rams
+  const availableCPUs = useMemo(() => levelSettings?.isSandbox ? cpus : levelSettings ? cpus.filter((c) => !isLocked(c.level, c.percent_through, levelSettings.level, levelSettings.percent)) : cpus, [levelSettings, cpus])
+  const availableGPUs = useMemo(() => levelSettings?.isSandbox ? gpus : levelSettings ? gpus.filter((g) => !isLocked(g.level, g.percent_through, levelSettings.level, levelSettings.percent)) : gpus, [levelSettings, gpus])
+  const availableRAMs = useMemo(() => levelSettings?.isSandbox ? rams : levelSettings ? rams.filter((r) => !isLocked(r.level, r.percent_through, levelSettings.level, levelSettings.percent)) : rams, [levelSettings, rams])
 
-  const levelSettingsKey = levelSettings ? `${levelSettings.level}-${levelSettings.percent}` : null
   useEffect(() => {
     if (!levelSettings) return
-    const cpuId = state.selectedCPU && availableCPUs.some((c) => c.id === state.selectedCPU) ? state.selectedCPU : null
-    const cpu = cpuId ? cpus.find((c) => c.id === cpuId) : null
-    const maxCh = cpu?.max_memory_channels ?? 2
-    if (state.selectedCPU !== cpuId || state.selectedGPU !== (state.selectedGPU && availableGPUs.some((g) => g.id === state.selectedGPU) ? state.selectedGPU : null) || state.selectedRAM !== (state.selectedRAM && availableRAMs.some((r) => r.id === state.selectedRAM) ? state.selectedRAM : null)) {
-      setState((prev) => ({
-        ...prev, selectedCPU: cpuId, cpuFreq: cpu?.frequency ?? 0,
-        selectedGPU: prev.selectedGPU && availableGPUs.some((g) => g.id === prev.selectedGPU) ? prev.selectedGPU : null,
-        selectedRAM: prev.selectedRAM && availableRAMs.some((r) => r.id === prev.selectedRAM) ? prev.selectedRAM : null,
-        effectiveRamFreq: null, ramQuantity: Math.min(prev.ramQuantity || 0, maxCh * 2),
-      }))
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [levelSettingsKey])
+    setState((prev) => {
+      const newCpuId = prev.selectedCPU && availableCPUs.some((c) => c.id === prev.selectedCPU) ? prev.selectedCPU : null
+      const newGpuId = prev.selectedGPU && availableGPUs.some((g) => g.id === prev.selectedGPU) ? prev.selectedGPU : null
+      const newRamId = prev.selectedRAM && availableRAMs.some((r) => r.id === prev.selectedRAM) ? prev.selectedRAM : null
+      if (prev.selectedCPU === newCpuId && prev.selectedGPU === newGpuId && prev.selectedRAM === newRamId) return prev
+      const newCpu = newCpuId ? cpus.find((c) => c.id === newCpuId) : null
+      return {
+        ...prev,
+        selectedCPU: newCpuId,
+        selectedGPU: newGpuId,
+        selectedRAM: newRamId,
+        cpuFreq: newCpu?.frequency ?? 0,
+        effectiveRamFreq: null,
+        ramQuantity: Math.min(prev.ramQuantity || 0, (newCpu?.max_memory_channels ?? 2) * 2),
+      }
+    })
+  }, [levelSettings, cpus, gpus, rams, availableCPUs, availableGPUs, availableRAMs])
 
   const selectedCPU = state.selectedCPU ? cpus.find((c) => c.id === state.selectedCPU) ?? null : null
   const selectedGPU = state.selectedGPU ? gpus.find((g) => g.id === state.selectedGPU) ?? null : null
@@ -54,7 +58,9 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
   let rank: ScoreResult['rank'] = 'Error'
   if (selectedCPU && selectedGPU && selectedRAM) {
     cpuScore = calcCpuScore(selectedCPU, selectedRAM, state.ramQuantity || 1, state.cpuFreq || undefined, state.effectiveRamFreq ?? undefined)
-    gpuScore = calcGpuScore(selectedGPU, state.gpuCoreFreq || undefined, state.gpuMemFreq || undefined, state.gpuQuantity || 1)
+    gpuScore = state.testMode && state.testMode !== 'standard'
+      ? calcGpuScoreBenchmark(selectedGPU, state.testMode, state.gpuCoreFreq || undefined, state.gpuMemFreq || undefined, state.gpuQuantity || 1)
+      : calcGpuScore(selectedGPU, state.gpuCoreFreq || undefined, state.gpuMemFreq || undefined, state.gpuQuantity || 1)
     totalScore = calcTotalScore(cpuScore, gpuScore)
     rank = getRank(totalScore)
   }
@@ -63,7 +69,6 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
     <>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-        {/* CPU Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
@@ -107,7 +112,6 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
           )}
         </div>
 
-        {/* GPU Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
@@ -177,7 +181,6 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
           )}
         </div>
 
-        {/* RAM Card */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
@@ -248,7 +251,26 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
         </div>
       </div>
 
-      {/* Score Section */}
+      <div className="flex flex-wrap gap-2 mb-4 justify-center">
+        {(['standard', 'timespy_extreme', 'port_royal', 'speedway'] as BenchmarkTest[]).map((mode) => {
+          const disabled = mode !== 'standard' && selectedGPU && !(mode === 'timespy_extreme' ? selectedGPU.allow_timespy_extreme : mode === 'port_royal' ? selectedGPU.allow_port_royal : selectedGPU.allow_speedway)
+          return (
+            <button key={mode} onClick={() => setState((p) => ({ ...p, testMode: mode }))}
+              disabled={!!disabled}
+              className={clsx('px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                state.testMode === mode
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : disabled
+                    ? 'bg-slate-100 dark:bg-gray-700 text-slate-400 dark:text-gray-500 cursor-not-allowed'
+                    : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-600 border border-slate-200 dark:border-gray-600'
+              )}
+            >
+              {mode === 'standard' ? '3DMark' : mode === 'timespy_extreme' ? 'Time Spy Extreme' : mode === 'port_royal' ? 'Port Royal' : 'Speedway'}
+            </button>
+          )
+        })}
+      </div>
+
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl shadow-2xl p-8 text-white">
         <h2 className="text-2xl font-bold mb-6 text-center">{t('score_title')}</h2>
         {selectedCPU && selectedGPU && selectedRAM && rank !== 'Error' ? (
@@ -289,7 +311,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
               </div>
             </div>
             <div className="flex justify-center">
-              <button onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, cpuFreq: 0, gpuQuantity: 1, gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null })}
+              <button onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, cpuFreq: 0, gpuQuantity: 1, gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null, testMode: 'standard' })}
                 className="px-5 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-sm text-slate-300 hover:text-white transition-colors"
               >{t('reset')}</button>
             </div>

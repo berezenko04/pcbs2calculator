@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 interface Props {
   icon: ReactNode
@@ -22,7 +22,7 @@ export default function InputCard({ icon, label, value, onChange, min, children 
         type="number"
         min={min}
         value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => { const v = Number(e.target.value); onChange(min !== undefined ? Math.max(min, v) : v) }}
         className="w-full p-2.5 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100 outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-shadow [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       />
       {children}

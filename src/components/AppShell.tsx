@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, ReactNode, useRef } from 'react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import Lenis from 'lenis'
 import { Calculator as CalcIcon, Wrench, ArrowUp, Moon, Sun, Star, TrendingUp, Settings } from 'lucide-react'
@@ -185,7 +185,6 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300 relative">
       
-      {/* FLOATING STICKY HEADER */}
       <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 pointer-events-none ${stuckTop ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="pt-4 sm:pt-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex justify-center pointer-events-auto">
           <div className="flex items-center gap-2 sm:gap-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-gray-700/80 rounded-[1.25rem] p-1.5 shadow-xl shadow-slate-200/50 dark:shadow-black/40 w-full max-w-fit transition-all duration-500">
@@ -206,7 +205,6 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
         </div>
       </div>
 
-      {/* MAIN STATIC HEADER */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 lg:pt-16">
         <div className="flex items-center justify-between mb-8">
           <div>{renderGitBadge()}</div>
@@ -236,14 +234,12 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
         </div>
       </div>
 
-      {/* PAGE CONTENT */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div key={activeTab} className="animate-fadeIn">
           {children}
         </div>
       </div>
 
-      {/* FOOTER */}
       <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 pt-12">
         <div className="text-center text-xs text-slate-400 dark:text-gray-500">
           Developed by{' '}
