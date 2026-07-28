@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import clsx from 'clsx'
 import { Calculator as CalcIcon, Cpu, Gpu, MemoryStick } from 'lucide-react'
 import { useLang } from '@/lib/i18n/context'
@@ -11,18 +11,30 @@ import Slider from '@/components/ui/Slider'
 import SearchableSelect from '@/components/ui/SearchableSelect'
 import CalculatorScoreCard from './CalculatorScoreCard'
 
-interface Props {
-  cpus: CPU[]; gpus: GPU[]; rams: RAM[]; levelSettings: LevelSettings | null; gameVersion: GameVersion
+const DEFAULT_STATE: CalculatorState = {
+  selectedCPU: null, selectedGPU: null, selectedRAM: null,
+  ramQuantity: 1, cpuFreq: 0, gpuQuantity: 1,
+  gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null,
+  testMode: 'standard',
 }
 
-export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersion }: Props) {
+interface Props {
+  cpus: CPU[]; gpus: GPU[]; rams: RAM[]; levelSettings: LevelSettings | null; gameVersion: GameVersion
+  initialState?: Partial<CalculatorState>
+  onStateChange?: (state: CalculatorState) => void
+}
+
+export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersion, initialState, onStateChange }: Props) {
   const { t } = useLang()
-  const [state, setState] = useState<CalculatorState>({
-    selectedCPU: null, selectedGPU: null, selectedRAM: null,
-    ramQuantity: 1, cpuFreq: 0, gpuQuantity: 1,
-    gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null,
-    testMode: 'standard',
-  })
+  const [state, setState] = useState<CalculatorState>(() => ({ ...DEFAULT_STATE, ...initialState }))
+  const stateRef = useRef(state)
+  stateRef.current = state
+
+  useEffect(() => {
+    if (!onStateChange) return
+    const timer = setTimeout(() => onStateChange(stateRef.current), 300)
+    return () => clearTimeout(timer)
+  }, [state, onStateChange])
 
   useEffect(() => {
     if (gameVersion === 'pcbs' && state.testMode !== 'standard') {
@@ -254,7 +266,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersio
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4 justify-center">
-        {(gameVersion === 'pcbs' ? (['standard'] as BenchmarkTest[]) : (['standard', 'timespy_extreme', 'port_royal', 'speedway'] as BenchmarkTest[])).map((mode) => {
+        {(gameVersion === 'pcbs' ? [] : (['standard', 'timespy_extreme', 'port_royal', 'speedway'] as BenchmarkTest[])).map((mode) => {
           const disabled = mode !== 'standard' && selectedGPU && !(mode === 'timespy_extreme' ? selectedGPU.allow_timespy_extreme : mode === 'port_royal' ? selectedGPU.allow_port_royal : selectedGPU.allow_speedway)
           return (
             <button type="button" key={mode} onClick={() => setState((p) => ({ ...p, testMode: mode }))}

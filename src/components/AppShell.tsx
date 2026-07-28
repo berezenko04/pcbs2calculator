@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
+import { usePathname, useRouter } from 'next/navigation'
 import Lenis from 'lenis'
 import { Calculator as CalcIcon, Wrench, ArrowUp, Moon, Sun, Star, TrendingUp, Settings } from 'lucide-react'
 import LangSwitcher from './LangSwitcher'
@@ -14,12 +15,9 @@ export type TabId = 'calculator' | 'buildmaker' | 'upgrader'
 
 interface Props {
   children: ReactNode
-  activeTab: TabId
-  onTabChange: (tab: TabId) => void
   levelSettings: LevelSettings | null
   onOpenSettings: () => void
   gameVersion: GameVersion
-  onGameVersionChange: (v: GameVersion) => void
 }
 
 function GitBadge({ starCount }: { starCount: number | null }) {
@@ -98,8 +96,24 @@ function NavTabs({ tabs, activeTab, onChange }: {
   )
 }
 
-export default function AppShell({ children, activeTab, onTabChange, levelSettings, onOpenSettings, gameVersion, onGameVersionChange }: Props) {
+export default function AppShell({ children, levelSettings, onOpenSettings, gameVersion }: Props) {
+  const pathname = usePathname()
+  const router = useRouter()
   const { t } = useLang()
+
+  const activeTab: TabId = pathname.startsWith('/build-maker') ? 'buildmaker'
+    : pathname.startsWith('/upgrader') ? 'upgrader'
+    : 'calculator'
+
+  const handleTabChange = (id: TabId) => {
+    const routes: Record<TabId, string> = { calculator: '/calculator', buildmaker: '/build-maker', upgrader: '/upgrader' }
+    router.push(`${routes[id]}?version=${gameVersion}`)
+  }
+
+  const handleVersionChange = (v: GameVersion) => {
+    router.push(`${pathname}?version=${v}`)
+  }
+
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('pcbs2_dark')
@@ -186,12 +200,12 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
 
             <div className={`flex bg-white/50 dark:bg-gray-800/30 rounded-xl transition-opacity duration-500 p-0.5 ${stuckTabs ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
               <div className="flex items-center w-max">
-                <NavTabs tabs={tabs} activeTab={activeTab} onChange={onTabChange} />
+                <NavTabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
               </div>
             </div>
 
             <div className="pr-1 flex items-center gap-2">
-              <VersionSwitcher gameVersion={gameVersion} onChange={onGameVersionChange} />
+              <VersionSwitcher gameVersion={gameVersion} onChange={handleVersionChange} />
               <ActionButtons levelSettings={levelSettings} onOpenSettings={onOpenSettings} onToggleDark={toggleDark} darkMode={darkMode} />
             </div>
           </div>
@@ -202,7 +216,7 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
         <div className="flex items-center justify-between mb-8">
           <div><GitBadge starCount={starCount} /></div>
           <div className="flex items-center gap-2">
-            <VersionSwitcher gameVersion={gameVersion} onChange={onGameVersionChange} />
+            <VersionSwitcher gameVersion={gameVersion} onChange={handleVersionChange} />
             <ActionButtons levelSettings={levelSettings} onOpenSettings={onOpenSettings} onToggleDark={toggleDark} darkMode={darkMode} />
           </div>
         </div>
@@ -225,13 +239,13 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
 
         <div className="flex justify-center pb-8">
           <div className="inline-flex bg-white/80 dark:bg-gray-800/60 backdrop-blur-sm border border-slate-200 dark:border-gray-700 rounded-xl p-1 shadow-sm">
-            <NavTabs tabs={tabs} activeTab={activeTab} onChange={onTabChange} />
+            <NavTabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div key={activeTab} className="animate-fadeIn">
+        <div key={pathname} className="animate-fadeIn">
           {children}
         </div>
       </div>
