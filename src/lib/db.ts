@@ -18,6 +18,13 @@ export function tableName(base: string, version: GameVersion): string {
   return base
 }
 
+const cache = new Map<string, any>()
+
 export async function queryByVersion(baseTable: string, version: GameVersion) {
-  return query(`SELECT * FROM ${tableName(baseTable, version)} ORDER BY id`)
+  const key = `${version}:${baseTable}`
+  const cached = cache.get(key)
+  if (cached) return cached
+  const rows = await query(`SELECT * FROM ${tableName(baseTable, version)} ORDER BY id`)
+  cache.set(key, rows)
+  return rows
 }

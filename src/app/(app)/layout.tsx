@@ -1,15 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import AppShell from '@/components/AppShell'
-import BuildUpgrader from '@/components/BuildUpgrader'
 import LevelSettingsModal from '@/components/calculator/LevelSettingsModal'
-import type { CPU, GPU, RAM, Motherboard, Case, LevelSettings } from '@/lib/types'
+import { LevelSettingsProvider } from '@/lib/levelSettingsContext'
+import type { LevelSettings } from '@/lib/types'
 import type { GameVersion } from '@/lib/gameVersion'
-
-interface Props {
-  cpus: CPU[]; gpus: GPU[]; rams: RAM[]; motherboards: Motherboard[]; cases: Case[]; gameVersion: GameVersion
-}
 
 function levelKey(version: GameVersion) { return 'pcbs2_level_' + version }
 
@@ -24,28 +21,24 @@ function loadLevelSettings(version: GameVersion): LevelSettings | null {
   return null
 }
 
-export default function UpgraderPage({ cpus, gpus, rams, motherboards, cases, gameVersion }: Props) {
+function AppLayoutInner({ children }: { children: React.ReactNode }) {
+  const searchParams = useSearchParams()
+  const version = (searchParams.get('version') as GameVersion) || 'pcbs'
   const [levelSettings, setLevelSettings] = useState<LevelSettings | null>(null)
   const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
-    const saved = loadLevelSettings(gameVersion)
+    const saved = loadLevelSettings(version)
     setLevelSettings(saved)
     if (!saved) setShowSettings(true)
-  }, [gameVersion])
+  }, [version])
 
-  const allLevels = useMemo(() =>
-    [...cpus, ...gpus, ...rams].map(c => Number(c.level)).filter(l => !isNaN(l)),
-    [cpus, gpus, rams],
-  )
-  const maxLevel = allLevels.length > 0 ? Math.max(...allLevels) : 30
-
-  const handleSaveSettings = (lvl: number, pct: number, sandbox: boolean) => {
+  const handleSaveSettings = useCallback((lvl: number, pct: number, sandbox: boolean) => {
     const s: LevelSettings = { level: lvl, percent: pct, isSandbox: sandbox }
-    localStorage.setItem(levelKey(gameVersion), JSON.stringify(s))
+    localStorage.setItem(levelKey(version), JSON.stringify(s))
     setLevelSettings(s)
     setShowSettings(false)
-  }
+  }, [version])
 
   return (
     <>
@@ -53,14 +46,24 @@ export default function UpgraderPage({ cpus, gpus, rams, motherboards, cases, ga
         <LevelSettingsModal
           initialLevel={levelSettings?.level ?? 1} initialPercent={levelSettings?.percent ?? 0}
           initialSandbox={levelSettings?.isSandbox ?? false}
-          maxLevel={maxLevel} hasExistingSettings={!!levelSettings}
+          maxLevel={200} hasExistingSettings={!!levelSettings}
           onClose={() => { if (levelSettings) setShowSettings(false) }}
           onSave={handleSaveSettings}
         />
       )}
-      <AppShell levelSettings={levelSettings} onOpenSettings={() => setShowSettings(true)} gameVersion={gameVersion}>
-        <BuildUpgrader cpus={cpus} gpus={gpus} rams={rams} motherboards={motherboards} cases={cases} levelSettings={levelSettings} />
-      </AppShell>
+      <LevelSettingsProvider value={levelSettings}>
+        <AppShell levelSettings={levelSettings} onOpenSettings={() => setShowSettings(true)} gameVersion={version}>
+          {children}
+        </AppShell>
+      </LevelSettingsProvider>
     </>
+  )
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense>
+      <AppLayoutInner>{children}</AppLayoutInner>
+    </Suspense>
   )
 }
