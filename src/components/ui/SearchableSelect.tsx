@@ -48,7 +48,7 @@ export default function SearchableSelect<T extends { id: string }>({ options, va
       />
       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-500 pointer-events-none" />
       {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div data-lenis-prevent className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {filtered.length === 0 ? (
             <div className="p-3 text-slate-400 dark:text-gray-500 text-sm">{noResultsText || 'No results'}</div>
           ) : (

@@ -129,13 +129,13 @@ export default function AppShell({ children, activeTab, onTabChange, levelSettin
         <button
           key={v.id}
           onClick={() => onGameVersionChange(v.id)}
-          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+          className={`px-2.5 py-2 rounded-md text-xs font-medium transition-all ${
             gameVersion === v.id
               ? 'bg-indigo-600 text-white shadow-sm'
               : 'text-slate-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400'
           }`}
         >
-          {v.short.toUpperCase()}
+          {v.short}
         </button>
       ))}
     </div>

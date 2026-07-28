@@ -265,7 +265,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
                     : 'bg-white dark:bg-gray-700 text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-600 border border-slate-200 dark:border-gray-600'
               )}
             >
-              {mode === 'standard' ? '3DMark' : mode === 'timespy_extreme' ? 'Time Spy Extreme' : mode === 'port_royal' ? 'Port Royal' : 'Speedway'}
+              {mode === 'standard' ? 'Time Spy' : mode === 'timespy_extreme' ? 'Time Spy Extreme' : mode === 'port_royal' ? 'Port Royal' : 'Speedway'}
             </button>
           )
         })}
