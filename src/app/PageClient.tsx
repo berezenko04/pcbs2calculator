@@ -9,7 +9,7 @@ import Calculator from '@/components/calculator/Calculator'
 import BuildMaker from '@/components/BuildMaker'
 import BuildUpgrader from '@/components/BuildUpgrader'
 import LevelSettingsModal from '@/components/calculator/LevelSettingsModal'
-import { useLang } from '@/lib/i18n/context'
+
 
 interface DataState {
   cpus: CPU[]; gpus: GPU[]; rams: RAM[]
@@ -53,22 +53,14 @@ function loadLevelForVersion(version: GameVersion): LevelSettings | null {
 }
 
 function initialUiState(): UiState {
-  const gv: GameVersion = (() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('pcbs2_game_version') as GameVersion | null
-      if (stored && ['pcbs', 'pcbs2'].includes(stored)) return stored
-    }
-    return 'pcbs'
-  })()
-  const saved = loadLevelForVersion(gv)
   return {
     activeTab: 'calculator',
-    gameVersion: gv,
-    levelSettings: saved,
-    showSettings: saved === null,
-    draftLevel: saved?.level ?? 1,
-    draftPercent: saved?.percent ?? 0,
-    draftSandbox: saved?.isSandbox ?? false,
+    gameVersion: 'pcbs',
+    levelSettings: null,
+    showSettings: true,
+    draftLevel: 1,
+    draftPercent: 0,
+    draftSandbox: false,
   }
 }
 
@@ -81,15 +73,6 @@ function uiReducer(state: UiState, action: Action): UiState {
     case 'SET_DRAFT': return { ...state, ...action.payload }
     default: return state
   }
-}
-
-function LoadingFallback() {
-  const { t } = useLang()
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="text-slate-400 text-lg">{t('loading')}</div>
-    </div>
-  )
 }
 
 interface PageClientProps {
@@ -136,6 +119,15 @@ export default function PageClient({ pcbs, pcbs2 }: PageClientProps) {
     dispatch({ type: 'SET_DRAFT', payload: { level: ui.levelSettings?.level ?? 1, percent: ui.levelSettings?.percent ?? 0, sandbox: ui.levelSettings?.isSandbox ?? false } })
     dispatch({ type: 'SHOW_SETTINGS', payload: true })
   }, [ui.levelSettings])
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('pcbs2_game_version') as GameVersion | null
+      if (stored && ['pcbs', 'pcbs2'].includes(stored) && stored !== 'pcbs') {
+        dispatch({ type: 'SET_GAME_VERSION', payload: stored })
+      }
+    } catch {}
+  }, [])
 
   useEffect(() => { loadData(ui.gameVersion) }, [ui.gameVersion, loadData])
 
