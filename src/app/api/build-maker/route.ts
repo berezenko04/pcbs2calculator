@@ -43,6 +43,7 @@ function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number): num
 }
 
 function calcCpuScoreBenchmark(cpu: CPU, ram: RAM, ramQty: number, testMode: BenchmarkTest, cpuFreq?: number): number {
+  if (testMode === 'port_royal' || testMode === 'speedway') return 0
   if (testMode === 'timespy_extreme' && cpu.basic_cpu_score_tsx) {
     return calcCpuScoreRaw(cpu, ram, ramQty, cpu.basic_cpu_score_tsx, cpu.coreclockmultiplier_tsx, cpu.memchannelsmultiplier_tsx, cpu.memclockmultiplier_tsx, cpu.finaladjustment_tsx, cpuFreq)
   }
@@ -82,7 +83,8 @@ function calcGpuScore(gpu: GPU, gpuQuantity: number): number {
 }
 
 function calcTotalScore(cpuScore: number, gpuScore: number): number {
-  if (cpuScore <= 0 || gpuScore <= 0) return 0
+  if (cpuScore <= 0) return gpuScore > 0 ? gpuScore : 0
+  if (gpuScore <= 0) return cpuScore > 0 ? cpuScore : 0
   return Math.trunc(1 / (0.15 / cpuScore + 0.85 / gpuScore))
 }
 

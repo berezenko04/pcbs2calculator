@@ -7,6 +7,7 @@ export function supportsSli(gpu: GPU): boolean {
 }
 
 export function calcCpuScoreBenchmark(cpu: CPU, ram: RAM, ramQty: number, testMode: BenchmarkTest, cpuFreq?: number, effectiveRamFreq?: number): number {
+  if (testMode === 'port_royal' || testMode === 'speedway') return 0
   if (testMode === 'timespy_extreme' && cpu.basic_cpu_score_tsx) {
     return calcCpuScoreRaw(
       cpu, ram, ramQty,
@@ -66,7 +67,8 @@ export function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: numbe
 }
 
 export function calcTotalScore(cpuScore: number, gpuScore: number): number {
-  if (cpuScore <= 0 || gpuScore <= 0) return 0
+  if (cpuScore <= 0) return gpuScore > 0 ? gpuScore : 0
+  if (gpuScore <= 0) return cpuScore > 0 ? cpuScore : 0
   const w = 0.15
   return Math.trunc(1 / (w / cpuScore + (1 - w) / gpuScore))
 }

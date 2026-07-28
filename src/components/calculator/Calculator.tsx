@@ -275,14 +275,16 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
         <h2 className="text-2xl font-bold mb-6 text-center">{t('score_title')}</h2>
         {selectedCPU && selectedGPU && selectedRAM && rank !== 'Error' ? (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div className="bg-blue-500/20 dark:bg-blue-400/20 p-2.5 rounded-lg"><Cpu className="h-5 w-5 text-blue-400" /></div>
-                <div>
-                  <div className="text-xs text-slate-400 dark:text-gray-500 uppercase tracking-wider">{t('cpu_score')}</div>
-                  <div className="text-2xl font-bold text-blue-400">{formatNumber(cpuScore)}</div>
+            <div className={clsx('grid gap-4', state.testMode === 'port_royal' || state.testMode === 'speedway' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2')}>
+              {(state.testMode !== 'port_royal' && state.testMode !== 'speedway') && (
+                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                  <div className="bg-blue-500/20 dark:bg-blue-400/20 p-2.5 rounded-lg"><Cpu className="h-5 w-5 text-blue-400" /></div>
+                  <div>
+                    <div className="text-xs text-slate-400 dark:text-gray-500 uppercase tracking-wider">{t('cpu_score')}</div>
+                    <div className="text-2xl font-bold text-blue-400">{formatNumber(cpuScore)}</div>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
                 <div className="bg-green-500/20 dark:bg-green-400/20 p-2.5 rounded-lg"><Gpu className="h-5 w-5 text-green-400" /></div>
                 <div>
