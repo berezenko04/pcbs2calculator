@@ -203,8 +203,10 @@ export function estimateBuildScore(
   return { cpuScore, gpuScore, totalScore, rank }
 }
 
+const _nf = new Intl.NumberFormat('en-US')
+
 export function formatNumber(num: number): string {
-  return new Intl.NumberFormat('en-US').format(num)
+  return _nf.format(num)
 }
 
 export function formatSizeGb(gb: number): string {

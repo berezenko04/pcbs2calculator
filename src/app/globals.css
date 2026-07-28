@@ -19,3 +19,9 @@
   animation: none;
   mix-blend-mode: normal;
 }
+button, label, select, summary, [role="button"], [role="tab"], [role="option"], [role="menuitem"], [role="radio"], [role="switch"], [role="checkbox"] {
+  cursor: pointer;
+}
+button:disabled, [role="button"][aria-disabled="true"], label.disabled {
+  cursor: default;
+}

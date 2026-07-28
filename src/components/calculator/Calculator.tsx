@@ -2,18 +2,16 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import clsx from 'clsx'
-import { Calculator as CalcIcon, Cpu, Gpu, MemoryStick, TrendingUp } from 'lucide-react'
+import { Calculator as CalcIcon, Cpu, Gpu, MemoryStick } from 'lucide-react'
 import { useLang } from '@/lib/i18n/context'
 import { calcCpuScoreBenchmark, calcGpuScore, calcGpuScoreBenchmark, calcTotalScore, getRank, supportsSli, isLocked, formatNumber } from '@/lib/calculator'
 import type { CPU, GPU, RAM, CalculatorState, LevelSettings, ScoreResult, BenchmarkTest } from '@/lib/types'
 import Slider from '@/components/ui/Slider'
 import SearchableSelect from '@/components/ui/SearchableSelect'
+import CalculatorScoreCard from './CalculatorScoreCard'
 
 interface Props {
-  cpus: CPU[]
-  gpus: GPU[]
-  rams: RAM[]
-  levelSettings: LevelSettings | null
+  cpus: CPU[]; gpus: GPU[]; rams: RAM[]; levelSettings: LevelSettings | null
 }
 
 export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
@@ -39,11 +37,8 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
       const newCpu = newCpuId ? cpus.find((c) => c.id === newCpuId) : null
       return {
         ...prev,
-        selectedCPU: newCpuId,
-        selectedGPU: newGpuId,
-        selectedRAM: newRamId,
-        cpuFreq: newCpu?.frequency ?? 0,
-        effectiveRamFreq: null,
+        selectedCPU: newCpuId, selectedGPU: newGpuId, selectedRAM: newRamId,
+        cpuFreq: newCpu?.frequency ?? 0, effectiveRamFreq: null,
         ramQuantity: Math.min(prev.ramQuantity || 0, (newCpu?.max_memory_channels ?? 2) * 2),
       }
     })
@@ -67,7 +62,6 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
 
   return (
     <>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
           <div className="flex items-center justify-between mb-4">
@@ -140,10 +134,10 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
                     {t('gpu_qty')}
                   </span>
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => setState((p) => ({ ...p, gpuQuantity: 1 }))}
+                    <button type="button" onClick={() => setState((p) => ({ ...p, gpuQuantity: 1 }))}
                       className={clsx('px-3 py-1 text-xs font-medium rounded-lg transition-colors', state.gpuQuantity === 1 ? 'bg-green-600 text-white shadow-sm' : 'bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-700')}
                     >1x</button>
-                    <button onClick={() => setState((p) => ({ ...p, gpuQuantity: 2 }))}
+                    <button type="button" onClick={() => setState((p) => ({ ...p, gpuQuantity: 2 }))}
                       className={clsx('px-3 py-1 text-xs font-medium rounded-lg transition-colors', state.gpuQuantity === 2 ? 'bg-green-600 text-white shadow-sm' : 'bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-700')}
                     >2x</button>
                   </div>
@@ -200,13 +194,13 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
             <>
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-sm text-slate-600 dark:text-gray-400">{t('qty')}</span>
-                <button onClick={() => setState((p) => ({ ...p, ramQuantity: Math.max(1, (p.ramQuantity || 1) - 1) }))}
+                <button type="button" onClick={() => setState((p) => ({ ...p, ramQuantity: Math.max(1, (p.ramQuantity || 1) - 1) }))}
                   className="w-8 h-8 rounded-lg border border-slate-300 dark:border-gray-600 flex items-center justify-center text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
-                >−</button>
+                aria-label={t('decrease') || 'Decrease'}>−</button>
                 <span className="w-6 text-center font-semibold text-slate-900 dark:text-gray-100">{state.ramQuantity || 1}</span>
-                <button onClick={() => setState((p) => ({ ...p, ramQuantity: Math.min(maxRamQuantity, (p.ramQuantity || 1) + 1) }))}
+                <button type="button" onClick={() => setState((p) => ({ ...p, ramQuantity: Math.min(maxRamQuantity, (p.ramQuantity || 1) + 1) }))}
                   className="w-8 h-8 rounded-lg border border-slate-300 dark:border-gray-600 flex items-center justify-center text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
-                >+</button>
+                aria-label={t('increase') || 'Increase'}>+</button>
               </div>
               <div className="p-4 bg-purple-50 dark:bg-purple-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
                 <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">{t('total')}</span><span className="font-semibold">{selectedRAM.total_size_gb * state.ramQuantity} {t('gb')} ({state.ramQuantity}×{selectedRAM.total_size_gb}GB)</span></div>
@@ -228,6 +222,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
                           <input type="number" min={defFreq} max={maxFreq} step={100} value={curVal}
                             onChange={(e) => { const v = e.target.value ? Math.min(Math.max(Number(e.target.value), defFreq), maxFreq) : defFreq; setFreq(v) }}
                             className="w-24 p-1 pr-9 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-sm outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-shadow [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            aria-label={t('frequency_bios')}
                           />
                           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
                         </div>
@@ -255,7 +250,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
         {(['standard', 'timespy_extreme', 'port_royal', 'speedway'] as BenchmarkTest[]).map((mode) => {
           const disabled = mode !== 'standard' && selectedGPU && !(mode === 'timespy_extreme' ? selectedGPU.allow_timespy_extreme : mode === 'port_royal' ? selectedGPU.allow_port_royal : selectedGPU.allow_speedway)
           return (
-            <button key={mode} onClick={() => setState((p) => ({ ...p, testMode: mode }))}
+            <button type="button" key={mode} onClick={() => setState((p) => ({ ...p, testMode: mode }))}
               disabled={!!disabled}
               className={clsx('px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                 state.testMode === mode
@@ -271,61 +266,12 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
         })}
       </div>
 
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl shadow-2xl p-8 text-white">
-        <h2 className="text-2xl font-bold mb-6 text-center">{t('score_title')}</h2>
-        {selectedCPU && selectedGPU && selectedRAM && rank !== 'Error' ? (
-          <div className="space-y-6">
-            <div className={clsx('grid gap-4', state.testMode === 'port_royal' || state.testMode === 'speedway' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2')}>
-              {(state.testMode !== 'port_royal' && state.testMode !== 'speedway') && (
-                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                  <div className="bg-blue-500/20 dark:bg-blue-400/20 p-2.5 rounded-lg"><Cpu className="h-5 w-5 text-blue-400" /></div>
-                  <div>
-                    <div className="text-xs text-slate-400 dark:text-gray-500 uppercase tracking-wider">{t('cpu_score')}</div>
-                    <div className="text-2xl font-bold text-blue-400">{formatNumber(cpuScore)}</div>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div className="bg-green-500/20 dark:bg-green-400/20 p-2.5 rounded-lg"><Gpu className="h-5 w-5 text-green-400" /></div>
-                <div>
-                  <div className="text-xs text-slate-400 dark:text-gray-500 uppercase tracking-wider">{t('gpu_score')}</div>
-                  <div className="text-2xl font-bold text-green-400">{formatNumber(gpuScore)}</div>
-                </div>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10" /></div>
-              <div className="relative flex justify-center">
-                <span className="bg-slate-800 px-4 py-1 rounded-full text-xs text-slate-400 dark:text-gray-500 border border-white/10">{t('total_label')}</span>
-              </div>
-            </div>
-            <div className="text-center py-2">
-              <div className="text-6xl font-bold tracking-tight">{formatNumber(totalScore)}</div>
-              <div className={clsx('inline-flex items-center gap-2 px-5 py-2 mt-3 rounded-full text-sm font-semibold border',
-                rank === 'Elite' && 'bg-green-500/20 text-green-300 border-green-500/30',
-                rank === 'Performance' && 'bg-blue-500/20 dark:bg-blue-400/20 text-blue-300 border-blue-500/30',
-                rank === 'Good' && 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-                rank === 'Average' && 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-                rank === 'Budget' && 'bg-red-500/20 text-red-300 border-red-500/30',
-              )}>
-                <TrendingUp className="h-4 w-4" />
-                {t('rank_performance', t(rank.toLowerCase()))}
-              </div>
-            </div>
-            <div className="flex justify-center">
-              <button onClick={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, cpuFreq: 0, gpuQuantity: 1, gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null, testMode: 'standard' })}
-                className="px-5 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-sm text-slate-300 hover:text-white transition-colors"
-              >{t('reset')}</button>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <CalcIcon className="h-16 w-16 mx-auto mb-4 text-slate-400 dark:text-gray-500" />
-            <h3 className="text-xl font-semibold mb-2">{t('no_selection')}</h3>
-            <p className="text-slate-400 dark:text-gray-500">{t('no_selection_desc')}</p>
-          </div>
-        )}
-      </div>
+      <CalculatorScoreCard
+        cpuScore={cpuScore} gpuScore={gpuScore} totalScore={totalScore}
+        rank={rank} testMode={state.testMode || 'standard'}
+        hasSelection={!!(selectedCPU && selectedGPU && selectedRAM)}
+        onReset={() => setState({ selectedCPU: null, selectedGPU: null, selectedRAM: null, ramQuantity: 1, cpuFreq: 0, gpuQuantity: 1, gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null, testMode: 'standard' })}
+      />
     </>
   )
 }

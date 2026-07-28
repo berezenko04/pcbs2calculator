@@ -14,12 +14,10 @@ export default function Slider({ min, max, step, value, onChange, className }: {
   const display = local ?? value
 
   return (
-    <input
-      type="range"
-      min={min}
-      max={max}
-      step={step}
+    <input type="range"
+      min={min} max={max} step={step}
       value={display}
+      aria-label="Slider"
       onChange={(e) => setLocal(Number(e.target.value))}
       onPointerUp={() => {
         if (local !== null) { onChange(local); setLocal(null) }

@@ -24,7 +24,7 @@ export default function LevelSettingsModal({ initialLevel, initialPercent, initi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:text-gray-400 transition-colors">
+        <button type="button" onClick={onClose} className="absolute top-4 right-4 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:text-gray-400 transition-colors" aria-label={t('close') || 'Close'}>
           <X className="h-5 w-5" />
         </button>
 
@@ -39,8 +39,10 @@ export default function LevelSettingsModal({ initialLevel, initialPercent, initi
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-slate-700 dark:text-gray-300">{t('sandbox_mode')}</span>
-            <button
+            <button type="button"
               onClick={() => setSandbox((p) => !p)}
+              role="switch"
+              aria-checked={sandbox}
               className={clsx(
                 'relative w-11 h-6 rounded-full transition-colors',
                 sandbox ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-gray-600'
@@ -55,17 +57,15 @@ export default function LevelSettingsModal({ initialLevel, initialPercent, initi
 
           <div className={clsx('space-y-6', sandbox && 'hidden')}>
             <div>
-              <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+              <label htmlFor="level-slider" className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
                 <span>{t('level')}</span>
                 <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{level}</span>
               </label>
-              <input
-                type="range"
-                min={1}
-                max={maxLevel}
-                value={level}
+              <input id="level-slider"
+                type="range" min={1} max={maxLevel} value={level}
                 onChange={(e) => setLevel(Number(e.target.value))}
                 className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                aria-label={t('level')}
               />
               <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
                 <span>1</span>
@@ -74,17 +74,15 @@ export default function LevelSettingsModal({ initialLevel, initialPercent, initi
             </div>
 
             <div>
-              <label className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+              <label htmlFor="percent-slider" className="flex justify-between text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
                 <span>{t('progress_through')}</span>
                 <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{percent}%</span>
               </label>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={percent}
+              <input id="percent-slider"
+                type="range" min={0} max={100} value={percent}
                 onChange={(e) => setPercent(Number(e.target.value))}
                 className="w-full h-2 bg-slate-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                aria-label={t('progress_through')}
               />
               <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-1">
                 <span>0%</span>
@@ -93,7 +91,7 @@ export default function LevelSettingsModal({ initialLevel, initialPercent, initi
             </div>
           </div>
 
-          <button
+          <button type="button"
             onClick={() => onSave(level, percent, sandbox)}
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors"
           >

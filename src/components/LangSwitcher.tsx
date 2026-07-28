@@ -23,17 +23,18 @@ export default function LangSwitcher() {
 
   return (
     <div ref={ref} className="relative">
-      <button
+      <button type="button"
         onClick={() => setOpen((p) => !p)}
-        className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-all"
+        className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-colors"
         title="Switch language"
+        aria-label="Switch language"
       >
         <Languages className="h-5 w-5" />
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-2 z-50 w-44 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden">
           {LANGUAGES.map((l) => (
-            <button
+            <button type="button"
               key={l.code}
               onClick={() => { setLang(l.code); setOpen(false) }}
               className={clsx(

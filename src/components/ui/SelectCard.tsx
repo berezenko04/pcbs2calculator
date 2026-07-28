@@ -13,14 +13,15 @@ interface Props {
 }
 
 export default function SelectCard({ icon, label, value, onChange, options, anyLabel }: Props) {
+  const id = 'select-' + label.toLowerCase().replace(/\s+/g, '-')
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-      <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
+      <label htmlFor={id} className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">
         {icon}
         {label}
       </label>
       <div className="relative">
-        <select
+        <select id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="w-full p-2.5 pr-10 border border-slate-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm dark:text-gray-100 appearance-none cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-shadow"
