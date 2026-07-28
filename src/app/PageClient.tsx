@@ -142,7 +142,7 @@ export default function PageClient({ pcbs, pcbs2 }: PageClientProps) {
         />
       )}
       <AppShell activeTab={ui.activeTab} onTabChange={(t) => dispatch({ type: 'SET_ACTIVE_TAB', payload: t })} levelSettings={ui.levelSettings} onOpenSettings={openSettings} gameVersion={ui.gameVersion} onGameVersionChange={handleGameVersionChange}>
-        {ui.activeTab === 'calculator' && <Calculator cpus={data.cpus} gpus={data.gpus} rams={data.rams} levelSettings={ui.levelSettings} />}
+        {ui.activeTab === 'calculator' && <Calculator cpus={data.cpus} gpus={data.gpus} rams={data.rams} levelSettings={ui.levelSettings} gameVersion={ui.gameVersion} />}
         {ui.activeTab === 'buildmaker' && <BuildMaker cpus={data.cpus} gpus={data.gpus} rams={data.rams} motherboards={data.motherboards} psus={data.psus} storageDrives={data.storageDrives} cases={data.cases} coolers={data.coolers} levelSettings={ui.levelSettings} gameVersion={ui.gameVersion} />}
         {ui.activeTab === 'upgrader' && <BuildUpgrader cpus={data.cpus} gpus={data.gpus} rams={data.rams} motherboards={data.motherboards} cases={data.cases} levelSettings={ui.levelSettings} />}
       </AppShell>

@@ -6,15 +6,16 @@ import { Calculator as CalcIcon, Cpu, Gpu, MemoryStick } from 'lucide-react'
 import { useLang } from '@/lib/i18n/context'
 import { calcCpuScoreBenchmark, calcGpuScore, calcGpuScoreBenchmark, calcTotalScore, getRank, supportsSli, isLocked, formatNumber } from '@/lib/calculator'
 import type { CPU, GPU, RAM, CalculatorState, LevelSettings, ScoreResult, BenchmarkTest } from '@/lib/types'
+import type { GameVersion } from '@/lib/gameVersion'
 import Slider from '@/components/ui/Slider'
 import SearchableSelect from '@/components/ui/SearchableSelect'
 import CalculatorScoreCard from './CalculatorScoreCard'
 
 interface Props {
-  cpus: CPU[]; gpus: GPU[]; rams: RAM[]; levelSettings: LevelSettings | null
+  cpus: CPU[]; gpus: GPU[]; rams: RAM[]; levelSettings: LevelSettings | null; gameVersion: GameVersion
 }
 
-export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
+export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersion }: Props) {
   const { t } = useLang()
   const [state, setState] = useState<CalculatorState>({
     selectedCPU: null, selectedGPU: null, selectedRAM: null,
@@ -22,6 +23,12 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
     gpuCoreFreq: 0, gpuMemFreq: 0, effectiveRamFreq: null,
     testMode: 'standard',
   })
+
+  useEffect(() => {
+    if (gameVersion === 'pcbs' && state.testMode !== 'standard') {
+      setState((p) => ({ ...p, testMode: 'standard' }))
+    }
+  }, [gameVersion])
 
   const availableCPUs = useMemo(() => levelSettings?.isSandbox ? cpus : levelSettings ? cpus.filter((c) => !isLocked(c.level, c.percent_through, levelSettings.level, levelSettings.percent)) : cpus, [levelSettings, cpus])
   const availableGPUs = useMemo(() => levelSettings?.isSandbox ? gpus : levelSettings ? gpus.filter((g) => !isLocked(g.level, g.percent_through, levelSettings.level, levelSettings.percent)) : gpus, [levelSettings, gpus])
@@ -78,7 +85,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
               const maxCh = cpu?.max_memory_channels ?? 2
               return { ...p, selectedCPU: id, cpuFreq: cpu?.frequency ?? 0, ramQuantity: Math.min(p.ramQuantity || 1, maxCh * 2) }
             })}
-            placeholder={t('select_cpu')} getLabel={(cpu) => cpu.part_name} noResultsText={t('no_results')}
+            placeholder={t('select_cpu')} getLabel={(cpu) => `${cpu.manufacturer} ${cpu.part_name}`} noResultsText={t('no_results')}
           />
           {selectedCPU && (
             <div className="p-4 bg-blue-50 dark:bg-blue-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
@@ -247,7 +254,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings }: Props) {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4 justify-center">
-        {(['standard', 'timespy_extreme', 'port_royal', 'speedway'] as BenchmarkTest[]).map((mode) => {
+        {(gameVersion === 'pcbs' ? (['standard'] as BenchmarkTest[]) : (['standard', 'timespy_extreme', 'port_royal', 'speedway'] as BenchmarkTest[])).map((mode) => {
           const disabled = mode !== 'standard' && selectedGPU && !(mode === 'timespy_extreme' ? selectedGPU.allow_timespy_extreme : mode === 'port_royal' ? selectedGPU.allow_port_royal : selectedGPU.allow_speedway)
           return (
             <button type="button" key={mode} onClick={() => setState((p) => ({ ...p, testMode: mode }))}
