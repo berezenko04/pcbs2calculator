@@ -9,6 +9,7 @@ import Calculator from '@/components/calculator/Calculator'
 import BuildMaker from '@/components/BuildMaker'
 import BuildUpgrader from '@/components/BuildUpgrader'
 import LevelSettingsModal from '@/components/calculator/LevelSettingsModal'
+import { getCachedData, setCachedData } from '@/lib/dataCache'
 import { useLang } from '@/lib/i18n/context'
 
 interface DataState {
@@ -107,6 +108,11 @@ function HomeInner() {
   const maxLevel = allLevels.length > 0 ? Math.max(...allLevels) : 30
 
   const loadData = useCallback(async (version: GameVersion) => {
+    const cached = getCachedData(version)
+    if (cached) {
+      setData({ ...cached, loading: false })
+      return
+    }
     setData({ loading: true })
     const q = `?version=${version}`
     try {
@@ -119,10 +125,12 @@ function HomeInner() {
         if (!r.ok) throw new Error(`HTTP ${r.status} from ${r.url.split('?')[0]}`)
       }
       const [c, g, r, mb, p, s, cs, cl] = await Promise.all(responses.map(r => r.json()))
-      setData({
+      const result = {
         cpus: c, gpus: g, rams: r, motherboards: mb, psus: p,
         storageDrives: s, cases: cs, coolers: cl, loading: false,
-      })
+      }
+      setCachedData(version, result)
+      setData(result)
     } catch {
       setData({ loading: false })
     }
