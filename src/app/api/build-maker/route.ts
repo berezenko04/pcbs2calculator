@@ -59,18 +59,18 @@ function calcGpuScoreBenchmark(gpu: GPU, testMode: BenchmarkTest, coreFreq?: num
   const mem = Number(memFreq && memFreq > 0 ? memFreq : gpu.base_mem_clock_freq) || 0
 
   if (testMode === 'timespy_extreme') {
-    if (!gpu.allow_timespy_extreme) return 0
+    if (gpu.allow_timespy_extreme === false) return 0
     const gt1 = (Number(gpu.gt1_single_core_clock_multiplier) || 0) * core + (Number(gpu.gt1_single_mem_clock_multiplier) || 0) * mem + (Number(gpu.gt1_single_benchmark_adjustment) || 0)
     const gt2 = (Number(gpu.gt2_single_core_clock_multiplier) || 0) * core + (Number(gpu.gt2_single_mem_clock_multiplier) || 0) * mem + (Number(gpu.gt2_single_benchmark_adjustment) || 0)
     return Math.trunc(SCALE_TSE * (gt1 + gt2))
   }
   if (testMode === 'port_royal') {
-    if (!gpu.allow_port_royal) return 0
+    if (gpu.allow_port_royal === false) return 0
     const pr = (Number(gpu.pr_single_core_clock_multiplier) || 0) * core + (Number(gpu.pr_single_mem_clock_multiplier) || 0) * mem + (Number(gpu.pr_single_benchmark_adjustment) || 0)
     return Math.trunc(SCALE_PR * pr)
   }
   if (testMode === 'speedway') {
-    if (!gpu.allow_speedway) return 0
+    if (gpu.allow_speedway === false) return 0
     const sw = (Number(gpu.speedway_core_clock_coefficient) || 0) * core + (Number(gpu.speedway_memory_clock_coefficient) || 0) * mem + (Number(gpu.speedway_constant) || 0)
     return Math.trunc(SCALE_SW * sw)
   }
