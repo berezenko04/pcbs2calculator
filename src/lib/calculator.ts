@@ -79,14 +79,13 @@ const SCALE_SW = 100
 
 function calcGpuScoreMultiplier(
   gpu: GPU, coreFreq: number, memFreq: number, gpuQuantity: number,
-  coreMultKey: 'gt1_single_core_clock_multiplier' | 'pr_single_core_clock_multiplier',
-  memMultKey: 'gt1_single_mem_clock_multiplier' | 'pr_single_mem_clock_multiplier',
-  adjKey: 'gt1_single_benchmark_adjustment' | 'pr_single_benchmark_adjustment' |
-          'gt2_single_benchmark_adjustment' | 'speedway_constant',
+  coreMultKey: string,
+  memMultKey: string,
+  adjKey: string,
   scale: number,
-  secondCoreMultKey?: 'gt2_single_core_clock_multiplier',
-  secondMemMultKey?: 'gt2_single_mem_clock_multiplier',
-  secondAdjKey?: 'gt2_single_benchmark_adjustment',
+  secondCoreMultKey?: string,
+  secondMemMultKey?: string,
+  secondAdjKey?: string,
 ): number {
   const core = Number(coreFreq) || 0
   const mem = Number(memFreq) || 0
@@ -117,10 +116,15 @@ export function calcGpuScoreBenchmark(gpu: GPU, testMode: BenchmarkTest, coreFre
 
   if (testMode === 'timespy_extreme') {
     if (gpu.allow_timespy_extreme === false) return 0
+    const dual = gpuQuantity ? gpuQuantity > 1 : false
     return calcGpuScoreMultiplier(gpu, core, mem, gpuQuantity || 1,
-      'gt1_single_core_clock_multiplier', 'gt1_single_mem_clock_multiplier', 'gt1_single_benchmark_adjustment',
+      dual ? 'gt1_dual_core_clock_multiplier' : 'gt1_single_core_clock_multiplier',
+      dual ? 'gt1_dual_mem_clock_multiplier' : 'gt1_single_mem_clock_multiplier',
+      dual ? 'gt1_dual_benchmark_adjustment' : 'gt1_single_benchmark_adjustment',
       SCALE_TSE,
-      'gt2_single_core_clock_multiplier', 'gt2_single_mem_clock_multiplier', 'gt2_single_benchmark_adjustment')
+      dual ? 'gt2_dual_core_clock_multiplier' : 'gt2_single_core_clock_multiplier',
+      dual ? 'gt2_dual_mem_clock_multiplier' : 'gt2_single_mem_clock_multiplier',
+      dual ? 'gt2_dual_benchmark_adjustment' : 'gt2_single_benchmark_adjustment')
   }
 
   if (testMode === 'port_royal') {
