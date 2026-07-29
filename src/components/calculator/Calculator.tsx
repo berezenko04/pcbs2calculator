@@ -267,9 +267,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersio
 
       <div className="flex flex-wrap gap-2 mb-4 justify-center">
         {(gameVersion === 'pcbs' ? (['standard'] as BenchmarkTest[]) : (['standard', 'timespy_extreme', 'port_royal', 'speedway'] as BenchmarkTest[])).map((mode) => {
-          const gpuUnsupported = mode !== 'standard' && selectedGPU && !(mode === 'timespy_extreme' ? (selectedGPU.allow_timespy_extreme ?? true) : mode === 'port_royal' ? (selectedGPU.allow_port_royal ?? true) : (selectedGPU.allow_speedway ?? true))
-          const multiGpuBlocked = state.gpuQuantity > 1 && (mode === 'port_royal' || mode === 'speedway')
-          const disabled = gpuUnsupported || multiGpuBlocked
+          const disabled = state.gpuQuantity > 1 && (mode === 'port_royal' || mode === 'speedway')
           return (
             <button type="button" key={mode} onClick={() => setState((p) => ({ ...p, testMode: mode }))}
               disabled={!!disabled}
