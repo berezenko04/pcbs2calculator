@@ -124,14 +124,14 @@ export function calcGpuScoreBenchmark(gpu: GPU, testMode: BenchmarkTest, coreFre
   }
 
   if (testMode === 'port_royal') {
-    if (gpu.allow_port_royal === false) return 0
+    if (gpu.allow_port_royal === false || (gpuQuantity && gpuQuantity > 1)) return 0
     return calcGpuScoreMultiplier(gpu, core, mem, gpuQuantity || 1,
       'pr_single_core_clock_multiplier', 'pr_single_mem_clock_multiplier', 'pr_single_benchmark_adjustment',
       SCALE_PR)
   }
 
   if (testMode === 'speedway') {
-    if (gpu.allow_speedway === false) return 0
+    if (gpu.allow_speedway === false || (gpuQuantity && gpuQuantity > 1)) return 0
     return calcGpuScoreMultiplier(gpu, core, mem, gpuQuantity || 1,
       'speedway_core_clock_coefficient' as any, 'speedway_memory_clock_coefficient' as any, 'speedway_constant' as any,
       SCALE_SW)
