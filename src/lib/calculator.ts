@@ -73,7 +73,7 @@ export function calcTotalScore(cpuScore: number, gpuScore: number): number {
   return Math.trunc(1 / (w / cpuScore + (1 - w) / gpuScore))
 }
 
-const SCALE_TSE = 39.46
+const SCALE_TSE = 39.2
 const SCALE_PR = 227.14
 const SCALE_SW = 100
 
