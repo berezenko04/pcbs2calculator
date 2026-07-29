@@ -60,7 +60,7 @@ export default function CalculatorPage({ cpus, gpus, rams, gameVersion }: Props)
   }, [gameVersion, router])
 
   return (
-    <Calculator cpus={cpus} gpus={gpus} rams={rams} levelSettings={levelSettings} gameVersion={gameVersion}
+    <Calculator key={gameVersion} cpus={cpus} gpus={gpus} rams={rams} levelSettings={levelSettings} gameVersion={gameVersion}
       initialState={initialState} onStateChange={handleStateChange} />
   )
 }
