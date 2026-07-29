@@ -37,10 +37,10 @@ export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersio
   }, [state, onStateChange])
 
   useEffect(() => {
-    if (gameVersion === 'pcbs' && state.testMode !== 'standard') {
+    if (state.testMode !== 'standard' && (gameVersion === 'pcbs' || state.gpuQuantity > 1)) {
       setState((p) => ({ ...p, testMode: 'standard' }))
     }
-  }, [gameVersion])
+  }, [gameVersion, state.gpuQuantity])
 
   const availableCPUs = useMemo(() => levelSettings?.isSandbox ? cpus : levelSettings ? cpus.filter((c) => !isLocked(c.level, c.percent_through, levelSettings.level, levelSettings.percent)) : cpus, [levelSettings, cpus])
   const availableGPUs = useMemo(() => levelSettings?.isSandbox ? gpus : levelSettings ? gpus.filter((g) => !isLocked(g.level, g.percent_through, levelSettings.level, levelSettings.percent)) : gpus, [levelSettings, gpus])
