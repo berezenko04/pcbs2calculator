@@ -265,8 +265,9 @@ export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersio
         </div>
       </div>
 
+      {gameVersion !== 'pcbs' && (
       <div className="flex flex-wrap gap-2 mb-4 justify-center">
-        {(gameVersion === 'pcbs' ? (['standard'] as BenchmarkTest[]) : (['standard', 'timespy_extreme', 'port_royal', 'speedway'] as BenchmarkTest[])).map((mode) => {
+        {(['standard', 'timespy_extreme', 'port_royal', 'speedway'] as BenchmarkTest[]).map((mode) => {
           const disabled = state.gpuQuantity > 1 && (mode === 'port_royal' || mode === 'speedway')
           return (
             <button type="button" key={mode} onClick={() => setState((p) => ({ ...p, testMode: mode }))}
@@ -284,6 +285,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersio
           )
         })}
       </div>
+      )}
 
       <CalculatorScoreCard
         cpuScore={cpuScore} gpuScore={gpuScore} totalScore={totalScore}
