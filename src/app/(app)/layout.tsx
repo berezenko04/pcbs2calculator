@@ -46,7 +46,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
         <LevelSettingsModal
           initialLevel={levelSettings?.level ?? 1} initialPercent={levelSettings?.percent ?? 0}
           initialSandbox={levelSettings?.isSandbox ?? false}
-          maxLevel={200} hasExistingSettings={!!levelSettings}
+          maxLevel={version === 'pcbs' ? 34 : 30} hasExistingSettings={!!levelSettings}
           onClose={() => { if (levelSettings) setShowSettings(false) }}
           onSave={handleSaveSettings}
         />
