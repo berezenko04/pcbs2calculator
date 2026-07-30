@@ -225,8 +225,8 @@ export default function AppShell({ children, levelSettings, onOpenSettings, game
           <div className="bg-indigo-100 dark:bg-indigo-900 p-2.5 rounded-xl inline-flex mb-3">
             <CalcIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{t('title')}</h1>
-          <p className="text-sm text-slate-500 dark:text-gray-400">{t('subtitle')}</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-gray-100">{GAME_VERSIONS.find(v => v.id === gameVersion)?.label ?? 'PCBS2'} {t('calculator')}</h1>
+          <p className="text-sm text-slate-500 dark:text-gray-400">{gameVersion === 'pcbs' ? t('subtitle_v1') : t('subtitle')}</p>
           {levelSettings && (
             <div className="flex items-center justify-center gap-2 mt-3">
               <div className="inline-flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-full text-xs font-medium">
