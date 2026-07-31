@@ -7,7 +7,7 @@ import { LANGUAGES } from '@/lib/i18n/translations'
 import { Languages } from 'lucide-react'
 
 export default function LangSwitcher() {
-  const { lang, setLang } = useLang()
+  const { lang, setLang, t } = useLang()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -26,8 +26,8 @@ export default function LangSwitcher() {
       <button type="button"
         onClick={() => setOpen((p) => !p)}
         className="p-2.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-xl transition-colors"
-        title="Switch language"
-        aria-label="Switch language"
+        title={t('switch_language')}
+        aria-label={t('switch_language')}
       >
         <Languages className="h-5 w-5" />
       </button>

@@ -166,7 +166,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
 
   const doSearch = async () => {
     if (budget <= 0) { setBudgetError(t('bm_enter_budget')); setTimeout(() => setBudgetError(''), 2500); return }
-    if (targetScore <= 0) { setBudgetError('Please enter a target score'); setTimeout(() => setBudgetError(''), 2500); return }
+    if (targetScore <= 0) { setBudgetError(t('bu_enter_target_score')); setTimeout(() => setBudgetError(''), 2500); return }
     if (!selectedCPU || !selectedGPU || !selectedRAM) { setBudgetError(t('bu_select_components')); setTimeout(() => setBudgetError(''), 2500); return }
     setAlreadyMet(false)
     if (currentTotalScore >= targetScore) { setAlreadyMet(true); setSearched(true); setResults([]); return }
@@ -221,7 +221,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
               onChange={(id) => { setSelectedCPU(id); const cpu = cpus.find(c => c.id === id); setRamQuantity(Math.min(ramQuantity, (cpu?.max_memory_channels ?? 2) * 2)) }}
               placeholder={t('select_cpu')} getLabel={(cpu) => `${cpu.manufacturer} ${cpu.part_name}`} noResultsText={t('no_results')}
             />
-            {currentCPU && <div className="text-xs text-slate-400 dark:text-gray-500 mt-1">{currentCPU.cores} {t('cores')} · {currentCPU.frequency} {t('mhz')} · TDP: {currentCPU.wattage}W</div>}
+            {currentCPU && <div className="text-xs text-slate-400 dark:text-gray-500 mt-1">{currentCPU.cores} {t('cores')} · {currentCPU.frequency} {t('mhz')} · {t('tdp')} {currentCPU.wattage}{t('w')}</div>}
           </div>
 
           <div className="bg-slate-50 dark:bg-gray-900/50 rounded-xl p-4">
@@ -233,7 +233,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
               onChange={(id) => { setSelectedGPU(id); if (gpus.find(g => g.id === id) && !supportsSli(gpus.find(g => g.id === id)!)) setUseSli(false) }}
               placeholder={t('select_gpu')} getLabel={(gpu) => `${gpu.manufacturer} ${gpu.part_name}`} noResultsText={t('no_results')}
             />
-            {currentGPU && supportsSli(currentGPU) && <div className="mt-2"><ToggleSwitch label="SLI / Crossfire" checked={useSli} onChange={setUseSli} /></div>}
+            {currentGPU && supportsSli(currentGPU) && <div className="mt-2"><ToggleSwitch label={t('sli_crossfire')} checked={useSli} onChange={setUseSli} /></div>}
             {currentGPU && <div className="text-xs text-slate-400 dark:text-gray-500 mt-1">{currentGPU.vram_gb}GB VRAM · {currentGPU.wattage}W</div>}
           </div>
 

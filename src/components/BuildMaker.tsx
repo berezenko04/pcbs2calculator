@@ -286,7 +286,7 @@ export default function BuildMaker({ cpus, gpus, rams, motherboards, psus, stora
             {t('bm_options')}
           </label>
           <div className="space-y-3">
-            <ToggleSwitch label="SLI / Crossfire" checked={useSli} onChange={setUseSli} />
+            <ToggleSwitch label={t('sli_crossfire')} checked={useSli} onChange={setUseSli} />
             <ToggleSwitch label={t('bm_cpu_oc')} checked={cpuOc} onChange={setCpuOc} activeColor="bg-blue-600" />
             <ToggleSwitch label={t('bm_gpu_oc')} checked={gpuOc} onChange={setGpuOc} />
           </div>
