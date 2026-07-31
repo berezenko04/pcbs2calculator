@@ -193,12 +193,12 @@ export default function AppShell({ children, levelSettings, onOpenSettings, game
 
       <div className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-500 pointer-events-none ${stuckTop ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
         <div className="pt-4 sm:pt-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex justify-center pointer-events-auto">
-          <div className="flex items-center gap-2 sm:gap-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-gray-700/80 rounded-[1.25rem] p-1.5 shadow-xl shadow-slate-200/50 dark:shadow-black/40 w-full max-w-fit overflow-x-auto transition-colors duration-500">
+          <div className="flex items-center gap-2 sm:gap-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-gray-700/80 rounded-[1.25rem] p-1.5 shadow-xl shadow-slate-200/50 dark:shadow-black/40 w-full max-w-fit transition-colors duration-500">
             <div className="hidden lg:block pl-1">
               <GitBadge starCount={starCount} />
             </div>
 
-            <div className={`flex bg-white/50 dark:bg-gray-800/30 rounded-xl transition-opacity duration-500 p-0.5 ${stuckTabs ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+            <div className={`hidden lg:flex bg-white/50 dark:bg-gray-800/30 rounded-xl transition-opacity duration-500 p-0.5 ${stuckTabs ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
               <div className="flex items-center w-max">
                 <NavTabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
               </div>
@@ -237,8 +237,8 @@ export default function AppShell({ children, levelSettings, onOpenSettings, game
           )}
         </div>
 
-        <div className="flex justify-center pb-8 overflow-x-auto">
-          <div className="inline-flex bg-white/80 dark:bg-gray-800/60 backdrop-blur-sm border border-slate-200 dark:border-gray-700 rounded-xl p-1 shadow-sm max-w-full">
+        <div className="flex pb-8 overflow-x-auto">
+          <div className="inline-flex bg-white/80 dark:bg-gray-800/60 backdrop-blur-sm border border-slate-200 dark:border-gray-700 rounded-xl p-1 shadow-sm m-auto">
             <NavTabs tabs={tabs} activeTab={activeTab} onChange={handleTabChange} />
           </div>
         </div>
