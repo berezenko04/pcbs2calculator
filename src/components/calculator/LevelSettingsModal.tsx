@@ -23,7 +23,7 @@ export default function LevelSettingsModal({ initialLevel, initialPercent, initi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-5 sm:p-8 relative max-h-[90vh] overflow-y-auto">
         <button type="button" onClick={onClose} className="absolute top-4 right-4 text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:text-gray-400 transition-colors" aria-label={t('close') || 'Close'}>
           <X className="h-5 w-5" />
         </button>

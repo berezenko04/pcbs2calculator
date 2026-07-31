@@ -21,7 +21,7 @@ export default function CalculatorScoreCard({ cpuScore, gpuScore, totalScore, ra
   const isGpuOnly = testMode === 'port_royal' || testMode === 'speedway'
 
   return (
-    <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl shadow-2xl p-8 text-white">
+    <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl shadow-2xl p-5 sm:p-8 text-white">
       <h2 className="text-2xl font-bold mb-6 text-center">{t('score_title')}</h2>
       {hasSelection && rank !== 'Error' ? (
         <div className="space-y-6">
@@ -50,7 +50,7 @@ export default function CalculatorScoreCard({ cpuScore, gpuScore, totalScore, ra
             </div>
           </div>
           <div className="text-center py-2">
-            <div className="text-6xl font-bold tracking-tight">{formatNumber(totalScore)}</div>
+            <div className="text-5xl sm:text-6xl font-bold tracking-tight">{formatNumber(totalScore)}</div>
             <div className={clsx('inline-flex items-center gap-2 px-5 py-2 mt-3 rounded-full text-sm font-semibold border',
               rank === 'Elite' && 'bg-green-500/20 text-green-300 border-green-500/30',
               rank === 'Performance' && 'bg-blue-500/20 dark:bg-blue-400/20 text-blue-300 border-blue-500/30',

@@ -109,7 +109,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersio
                 if (!selectedCPU.can_overclock || maxFreq <= baseFreq) return null
                 return (
                   <div className="pt-2 border-t border-blue-200 space-y-2 mt-1">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap justify-between items-center gap-2">
                       <span className="text-slate-600 dark:text-gray-400">{t('cpu_frequency')}</span>
                       <div className="flex items-center gap-1.5">
                         <button type="button" onClick={() => setState((p) => ({ ...p, cpuFreq: Math.max(baseFreq, (p.cpuFreq || baseFreq) - 25) }))}
@@ -255,7 +255,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersio
 
                   return (
                     <>
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-wrap justify-between items-center gap-2">
                         <span className="text-slate-600 dark:text-gray-400">{t('frequency_bios')}</span>
                         <div className="relative">
                           <input type="number" min={defFreq} max={maxFreq} step={100} value={curVal}
