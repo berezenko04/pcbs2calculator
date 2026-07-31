@@ -28,8 +28,8 @@ function calcCpuScoreRaw(cpu: CPU, ram: RAM, ramQty: number, baseScore: number, 
   return Number.isFinite(result) ? result : Math.trunc(baseScore)
 }
 
-function calcCpuScoreTsx(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number): number {
-  const freq = Number(cpuFreq && cpuFreq > 0 ? cpuFreq : cpu.frequency) || 0
+function calcCpuScoreTsx(cpu: CPU, ram: RAM, ramQty: number): number {
+  const freq = Number(cpu.frequency) || 0
   const ramFreq = Number(Math.min(ram.frequency, cpu.default_memory_speed)) || 0
   const a = Number(cpu.coreclockmultiplier_tsx) || 0
   const b = Number(cpu.memchannelsmultiplier_tsx) || 0
@@ -60,7 +60,7 @@ function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number): num
 function calcCpuScoreBenchmark(cpu: CPU, ram: RAM, ramQty: number, testMode: BenchmarkTest, cpuFreq?: number): number {
   if (testMode === 'port_royal' || testMode === 'speedway') return 0
   if (testMode === 'timespy_extreme' && cpu.basic_cpu_score_tsx) {
-    return calcCpuScoreTsx(cpu, ram, ramQty, cpuFreq)
+    return calcCpuScoreTsx(cpu, ram, ramQty)
   }
   return calcCpuScore(cpu, ram, ramQty, cpuFreq)
 }

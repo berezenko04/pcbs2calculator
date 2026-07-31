@@ -8,8 +8,8 @@ export function supportsSli(gpu: GPU): boolean {
 
 const TSX_SCORE_DIVISOR = 350000
 
-function calcCpuScoreTsx(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number, effectiveRamFreq?: number): number {
-  const freq = Number(cpuFreq && cpuFreq > 0 ? cpuFreq : cpu.frequency) || 0
+function calcCpuScoreTsx(cpu: CPU, ram: RAM, ramQty: number, effectiveRamFreq?: number): number {
+  const freq = Number(cpu.frequency) || 0
   const ramFreq = Number(effectiveRamFreq ?? Math.min(ram.frequency, cpu.default_memory_speed)) || 0
   const a = Number(cpu.coreclockmultiplier_tsx) || 0
   const b = Number(cpu.memchannelsmultiplier_tsx) || 0
@@ -26,7 +26,7 @@ function calcCpuScoreTsx(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number, e
 export function calcCpuScoreBenchmark(cpu: CPU, ram: RAM, ramQty: number, testMode: BenchmarkTest, cpuFreq?: number, effectiveRamFreq?: number): number {
   if (testMode === 'port_royal' || testMode === 'speedway') return 0
   if (testMode === 'timespy_extreme' && cpu.basic_cpu_score_tsx) {
-    return calcCpuScoreTsx(cpu, ram, ramQty, cpuFreq, effectiveRamFreq)
+    return calcCpuScoreTsx(cpu, ram, ramQty, effectiveRamFreq)
   }
   return calcCpuScore(cpu, ram, ramQty, cpuFreq, effectiveRamFreq)
 }
