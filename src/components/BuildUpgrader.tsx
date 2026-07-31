@@ -87,26 +87,60 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
     )
     const ramCandidates = availableRAMs.filter(r =>
       r.id !== currentRAM.id && r.price * (ramQuantity || 1) <= available &&
+      Number(r.frequency) >= Number(currentRAM.frequency) &&
+      Number(r.total_size_gb) >= Number(currentRAM.total_size_gb) &&
       (Number(r.frequency) > Number(currentRAM.frequency) || Number(r.total_size_gb) > Number(currentRAM.total_size_gb))
     )
     setLastCandidateCounts({ cpu: cpuCandidates.length, gpu: gpuCandidates.length, ram: ramCandidates.length })
 
     const found: UpgradeResult[] = []
     const oldTotalScore = currentTotalScore
+    const rq = ramQuantity || 1
+
+    const baseCpuScore = calcCpuScore(currentCPU, currentRAM, rq, undefined, effectiveRamFreq ?? undefined)
+    const baseGpuScore = calcGpuScore(currentGPU, undefined, undefined, gpuQty)
+
+    const cpuScores = new Map<string, number>()
+    const gpuScores = new Map<string, number>()
+    const ramScores = new Map<string, number>()
+    const getCpuScore = (c: CPU) => {
+      let v = cpuScores.get(c.id)
+      if (v === undefined) { v = calcCpuScore(c, currentRAM, rq, undefined, effectiveRamFreq ?? undefined); cpuScores.set(c.id, v) }
+      return v
+    }
+    const getGpuScore = (g: GPU) => {
+      let v = gpuScores.get(g.id)
+      if (v === undefined) { v = calcGpuScore(g, undefined, undefined, useSli && supportsSli(g) ? 2 : 1); gpuScores.set(g.id, v) }
+      return v
+    }
+    const getRamScore = (r: RAM) => {
+      let v = ramScores.get(r.id)
+      if (v === undefined) { v = calcCpuScore(currentCPU, r, rq, undefined, effectiveRamFreq ?? undefined); ramScores.set(r.id, v) }
+      return v
+    }
 
     function tryStrategy(strategy: string, label: string, newCpu?: CPU, newGpu?: GPU, newRam?: RAM, newRamQty?: number) {
       const cpu = newCpu ?? currentCPU!
       const gpu = newGpu ?? currentGPU!
       const ram = newRam ?? currentRAM!
-      const rq = newRamQty ?? ramQuantity
+      const ramQ = newRamQty ?? ramQuantity
       const gq = useSli && supportsSli(gpu) ? 2 : 1
-      const cost = (newCpu ? newCpu.price : 0) + (newGpu ? newGpu.price * gq : 0) + (newRam ? newRam.price * rq : 0)
+      const cost = (newCpu ? newCpu.price : 0) + (newGpu ? newGpu.price * gq : 0) + (newRam ? newRam.price * ramQ : 0)
       if (cost > available) return
-      const cs = calcCpuScore(cpu, ram, rq, undefined, effectiveRamFreq ?? undefined)
+      const cs = calcCpuScore(cpu, ram, ramQ, undefined, effectiveRamFreq ?? undefined)
       const gs = calcGpuScore(gpu, undefined, undefined, gq)
       const totalScore = calcTotalScore(cs, gs)
       if (totalScore < targetScore || totalScore > targetScore + offset) return
-      found.push({ strategy, label, cost, oldTotalScore, newTotalScore: totalScore, scoreDelta: totalScore - oldTotalScore, cpu, gpu, ram, ramQty: rq, gpuQty: gq, rank: getRank(totalScore), newCpu, newGpu, newRam, newRamQty })
+      if (totalScore <= oldTotalScore) return
+      if (newCpu && totalScore <= calcTotalScore(getCpuScore(newCpu), baseGpuScore)) return
+      if (newGpu && totalScore <= calcTotalScore(baseCpuScore, getGpuScore(newGpu))) return
+      if (newRam && totalScore <= calcTotalScore(getRamScore(newRam), baseGpuScore)) return
+      if (strategy === 'all' && newCpu && newGpu && newRam) {
+        if (totalScore <= calcTotalScore(cs, baseGpuScore)) return
+        if (totalScore <= calcTotalScore(baseCpuScore, gs)) return
+        if (totalScore <= calcTotalScore(getCpuScore(newCpu), getGpuScore(newGpu))) return
+      }
+      found.push({ strategy, label, cost, oldTotalScore, newTotalScore: totalScore, scoreDelta: totalScore - oldTotalScore, cpu, gpu, ram, ramQty: ramQ, gpuQty: gq, rank: getRank(totalScore), newCpu, newGpu, newRam, newRamQty })
     }
 
     for (const nc of cpuCandidates) tryStrategy('cpu', t('bu_cpu_upgrade'), nc)
@@ -199,7 +233,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
               onChange={(id) => { setSelectedGPU(id); if (gpus.find(g => g.id === id) && !supportsSli(gpus.find(g => g.id === id)!)) setUseSli(false) }}
               placeholder={t('select_gpu')} getLabel={(gpu) => `${gpu.manufacturer} ${gpu.part_name}`} noResultsText={t('no_results')}
             />
-            {currentGPU && <div className="mt-2"><ToggleSwitch label="SLI / Crossfire" checked={useSli} onChange={setUseSli} /></div>}
+            {currentGPU && supportsSli(currentGPU) && <div className="mt-2"><ToggleSwitch label="SLI / Crossfire" checked={useSli} onChange={setUseSli} /></div>}
             {currentGPU && <div className="text-xs text-slate-400 dark:text-gray-500 mt-1">{currentGPU.vram_gb}GB VRAM · {currentGPU.wattage}W</div>}
           </div>
 
@@ -234,7 +268,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
 
                   return (
                     <>
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-wrap justify-between items-center gap-2">
                         <span className="text-xs text-slate-500 dark:text-gray-400">{t('frequency_bios')}</span>
                         <div className="relative">
                           <input type="number" min={defFreq} max={maxFreq} step={100} value={curVal}

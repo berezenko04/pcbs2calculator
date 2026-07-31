@@ -25,7 +25,7 @@ export default function BuildUpgraderResultCard({ label, cost, oldTotalScore, ne
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 border-l-4 border-emerald-500">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <span className="flex items-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
           <ArrowUp className="h-4 w-4" />
           {label}
@@ -63,8 +63,8 @@ export default function BuildUpgraderResultCard({ label, cost, oldTotalScore, ne
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-gray-700">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-gray-700">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-indigo-500" />
             <span className="text-sm text-slate-500 dark:text-gray-400">{t('bm_3dmark_score')}:</span>
