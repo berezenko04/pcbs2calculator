@@ -6,18 +6,27 @@ export function supportsSli(gpu: GPU): boolean {
     && gpu.double_gpu_graphics_score !== 'false'
 }
 
+const TSX_SCORE_DIVISOR = 350000
+
+function calcCpuScoreTsx(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number, effectiveRamFreq?: number): number {
+  const freq = Number(cpuFreq && cpuFreq > 0 ? cpuFreq : cpu.frequency) || 0
+  const ramFreq = Number(effectiveRamFreq ?? Math.min(ram.frequency, cpu.default_memory_speed)) || 0
+  const a = Number(cpu.coreclockmultiplier_tsx) || 0
+  const b = Number(cpu.memchannelsmultiplier_tsx) || 0
+  const c = Number(cpu.memclockmultiplier_tsx) || 0
+  const d = Number(cpu.finaladjustment_tsx) || 0
+  const sticks = Math.max(1, ramQty)
+  const maxChannels = Number(cpu.max_memory_channels) || 2
+  const channels = Math.min(sticks, maxChannels)
+  const cur = a * freq + b * channels + c * ramFreq + d
+  if (!(cur > 0) || !Number.isFinite(cur)) return 0
+  return Math.trunc(TSX_SCORE_DIVISOR / cur)
+}
+
 export function calcCpuScoreBenchmark(cpu: CPU, ram: RAM, ramQty: number, testMode: BenchmarkTest, cpuFreq?: number, effectiveRamFreq?: number): number {
   if (testMode === 'port_royal' || testMode === 'speedway') return 0
   if (testMode === 'timespy_extreme' && cpu.basic_cpu_score_tsx) {
-    return calcCpuScoreRaw(
-      cpu, ram, ramQty,
-      cpu.basic_cpu_score_tsx,
-      cpu.coreclockmultiplier_tsx,
-      cpu.memchannelsmultiplier_tsx,
-      cpu.memclockmultiplier_tsx,
-      cpu.finaladjustment_tsx,
-      cpuFreq, effectiveRamFreq
-    )
+    return calcCpuScoreTsx(cpu, ram, ramQty, cpuFreq, effectiveRamFreq)
   }
   return calcCpuScore(cpu, ram, ramQty, cpuFreq, effectiveRamFreq)
 }
@@ -73,7 +82,7 @@ export function calcTotalScore(cpuScore: number, gpuScore: number): number {
   return Math.trunc(1 / (w / cpuScore + (1 - w) / gpuScore))
 }
 
-const SCALE_TSE = 39.2
+const SCALE_TSE = 39.26
 const SCALE_PR = 227.14
 const SCALE_SW = 100
 
@@ -86,6 +95,7 @@ function calcGpuScoreMultiplier(
   secondCoreMultKey?: string,
   secondMemMultKey?: string,
   secondAdjKey?: string,
+  dualFactor?: number,
 ): number {
   const core = Number(coreFreq) || 0
   const mem = Number(memFreq) || 0
@@ -103,7 +113,8 @@ function calcGpuScoreMultiplier(
     total += c2 * core + m2 * mem + a2
   }
 
-  return Math.trunc(scale * total)
+  const factor = dualFactor && dualFactor > 0 ? dualFactor : 1
+  return Math.trunc(scale * total * factor)
 }
 
 export function calcGpuScoreBenchmark(gpu: GPU, testMode: BenchmarkTest, coreFreq?: number, memFreq?: number, gpuQuantity?: number): number {
@@ -117,14 +128,12 @@ export function calcGpuScoreBenchmark(gpu: GPU, testMode: BenchmarkTest, coreFre
   if (testMode === 'timespy_extreme') {
     if (gpu.allow_timespy_extreme === false) return 0
     const dual = gpuQuantity ? gpuQuantity > 1 : false
+    const dualFactor = dual && supportsSli(gpu) ? Number(gpu.dual_gpu_performance_increase) : undefined
     return calcGpuScoreMultiplier(gpu, core, mem, gpuQuantity || 1,
-      dual ? 'gt1_dual_core_clock_multiplier' : 'gt1_single_core_clock_multiplier',
-      dual ? 'gt1_dual_mem_clock_multiplier' : 'gt1_single_mem_clock_multiplier',
-      dual ? 'gt1_dual_benchmark_adjustment' : 'gt1_single_benchmark_adjustment',
+      'gt1_single_core_clock_multiplier', 'gt1_single_mem_clock_multiplier', 'gt1_single_benchmark_adjustment',
       SCALE_TSE,
-      dual ? 'gt2_dual_core_clock_multiplier' : 'gt2_single_core_clock_multiplier',
-      dual ? 'gt2_dual_mem_clock_multiplier' : 'gt2_single_mem_clock_multiplier',
-      dual ? 'gt2_dual_benchmark_adjustment' : 'gt2_single_benchmark_adjustment')
+      'gt2_single_core_clock_multiplier', 'gt2_single_mem_clock_multiplier', 'gt2_single_benchmark_adjustment',
+      dualFactor)
   }
 
   if (testMode === 'port_royal') {

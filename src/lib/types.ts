@@ -43,6 +43,7 @@ export interface GPU {
   single_gpu_graphics_score: number
   oc_single_gpu_score?: number
   double_gpu_graphics_score?: number | string
+  dual_gpu_performance_increase?: number | string
   oc_double_gpu_score?: number | string
   gpu_power_increase?: number
   vram_gb: number

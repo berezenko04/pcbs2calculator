@@ -28,6 +28,21 @@ function calcCpuScoreRaw(cpu: CPU, ram: RAM, ramQty: number, baseScore: number, 
   return Number.isFinite(result) ? result : Math.trunc(baseScore)
 }
 
+function calcCpuScoreTsx(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number): number {
+  const freq = Number(cpuFreq && cpuFreq > 0 ? cpuFreq : cpu.frequency) || 0
+  const ramFreq = Number(Math.min(ram.frequency, cpu.default_memory_speed)) || 0
+  const a = Number(cpu.coreclockmultiplier_tsx) || 0
+  const b = Number(cpu.memchannelsmultiplier_tsx) || 0
+  const c = Number(cpu.memclockmultiplier_tsx) || 0
+  const d = Number(cpu.finaladjustment_tsx) || 0
+  const sticks = Math.max(1, ramQty)
+  const maxChannels = Number(cpu.max_memory_channels) || 2
+  const channels = Math.min(sticks, maxChannels)
+  const cur = a * freq + b * channels + c * ramFreq + d
+  if (!(cur > 0) || !Number.isFinite(cur)) return 0
+  return Math.trunc(350000 / cur)
+}
+
 function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number): number {
   const freq = Number(cpuFreq && cpuFreq > 0 ? cpuFreq : cpu.frequency) || 0
   const baseFreq = Number(cpu.frequency) || 0
@@ -45,12 +60,12 @@ function calcCpuScore(cpu: CPU, ram: RAM, ramQty: number, cpuFreq?: number): num
 function calcCpuScoreBenchmark(cpu: CPU, ram: RAM, ramQty: number, testMode: BenchmarkTest, cpuFreq?: number): number {
   if (testMode === 'port_royal' || testMode === 'speedway') return 0
   if (testMode === 'timespy_extreme' && cpu.basic_cpu_score_tsx) {
-    return calcCpuScoreRaw(cpu, ram, ramQty, cpu.basic_cpu_score_tsx, cpu.coreclockmultiplier_tsx, cpu.memchannelsmultiplier_tsx, cpu.memclockmultiplier_tsx, cpu.finaladjustment_tsx, cpuFreq)
+    return calcCpuScoreTsx(cpu, ram, ramQty, cpuFreq)
   }
   return calcCpuScore(cpu, ram, ramQty, cpuFreq)
 }
 
-const SCALE_TSE = 39.46
+const SCALE_TSE = 39.26
 const SCALE_PR = 227.14
 const SCALE_SW = 100
 
@@ -60,9 +75,12 @@ function calcGpuScoreBenchmark(gpu: GPU, testMode: BenchmarkTest, coreFreq?: num
 
   if (testMode === 'timespy_extreme') {
     if (gpu.allow_timespy_extreme === false) return 0
+    const dualFactor = gpuQuantity && gpuQuantity > 1 && supportsSli(gpu)
+      ? Number(gpu.dual_gpu_performance_increase) || 1
+      : 1
     const gt1 = (Number(gpu.gt1_single_core_clock_multiplier) || 0) * core + (Number(gpu.gt1_single_mem_clock_multiplier) || 0) * mem + (Number(gpu.gt1_single_benchmark_adjustment) || 0)
     const gt2 = (Number(gpu.gt2_single_core_clock_multiplier) || 0) * core + (Number(gpu.gt2_single_mem_clock_multiplier) || 0) * mem + (Number(gpu.gt2_single_benchmark_adjustment) || 0)
-    return Math.trunc(SCALE_TSE * (gt1 + gt2))
+    return Math.trunc(SCALE_TSE * (gt1 + gt2) * dualFactor)
   }
   if (testMode === 'port_royal') {
     if (gpu.allow_port_royal === false || (gpuQuantity && gpuQuantity > 1)) return 0
