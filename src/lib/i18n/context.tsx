@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react'
-import { type Lang, useT, type TFunction } from './translations'
+import { LANGUAGES, type Lang, useT, type TFunction } from './translations'
 
 interface LangContextValue {
   lang: Lang
@@ -11,15 +11,26 @@ interface LangContextValue {
 
 const LangContext = createContext<LangContextValue | null>(null)
 
+const VALID_LANGS = LANGUAGES.map((l) => l.code)
+
+function applyDir(l: Lang) {
+  document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr'
+  document.documentElement.lang = l
+}
+
 export function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>('en')
 
   useEffect(() => {
     const stored = localStorage.getItem('pcbs2_lang') as Lang | null
-    if (stored && ['en', 'ru', 'uk', 'ko', 'zh', 'de', 'es', 'it'].includes(stored)) {
+    if (stored && VALID_LANGS.includes(stored)) {
       setLangState(stored)
     }
   }, [])
+
+  useEffect(() => {
+    applyDir(lang)
+  }, [lang])
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l)

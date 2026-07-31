@@ -29,7 +29,7 @@ export default function SelectCard({ icon, label, value, onChange, options, anyL
           <option value="">{anyLabel}</option>
           {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-500 pointer-events-none" />
+        <ChevronDown className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-500 pointer-events-none" />
       </div>
     </div>
   )

@@ -123,7 +123,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersio
                             className="w-24 p-1 pr-9 text-right border border-blue-300 dark:border-blue-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-sm outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-shadow [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             aria-label={t('cpu_frequency')}
                           />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
+                          <span className="absolute right-2 rtl:right-auto rtl:left-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
                         </div>
                         <button type="button" onClick={() => setState((p) => ({ ...p, cpuFreq: Math.min(maxFreq, (p.cpuFreq || baseFreq) + 25) }))}
                           className="w-9 h-8 rounded-lg border border-slate-300 dark:border-gray-600 flex items-center justify-center text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
@@ -263,7 +263,7 @@ export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersio
                             className="w-24 p-1 pr-9 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-sm outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-shadow [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             aria-label={t('frequency_bios')}
                           />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
+                          <span className="absolute right-2 rtl:right-auto rtl:left-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
                         </div>
                       </div>
                       <div className="flex gap-1.5 mt-1.5">

@@ -276,7 +276,7 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
                             className="w-20 p-1 pr-10 text-right border border-purple-300 dark:border-purple-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-xs outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-shadow [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             aria-label={t('frequency_bios')}
                           />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
+                          <span className="absolute right-2 rtl:right-auto rtl:left-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
                         </div>
                       </div>
                       <div className="flex gap-1.5">
