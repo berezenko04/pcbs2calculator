@@ -103,23 +103,43 @@ export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersio
             <div className="p-4 bg-blue-50 dark:bg-blue-900/50 rounded-lg space-y-2 text-sm text-slate-900 dark:text-gray-100">
               <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">{t('cores')}</span><span className="font-semibold">{selectedCPU.cores}</span></div>
               <div className="flex justify-between"><span className="text-slate-600 dark:text-gray-400">{t('frequency')}</span><span className="font-semibold">{selectedCPU.frequency} {t('mhz')}</span></div>
-              {selectedCPU.can_overclock && selectedCPU.max_freq && selectedCPU.max_freq > selectedCPU.frequency && (
-                <div className="pt-2 border-t border-blue-200 space-y-2 mt-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600 dark:text-gray-400">{t('cpu_frequency')}</span>
-                    <span className="font-semibold text-blue-700 dark:text-blue-300">{state.cpuFreq || selectedCPU.frequency} {t('mhz')}</span>
+              {(() => {
+                const baseFreq = selectedCPU.frequency ?? 0
+                const maxFreq = selectedCPU.max_freq ?? 0
+                if (!selectedCPU.can_overclock || maxFreq <= baseFreq) return null
+                return (
+                  <div className="pt-2 border-t border-blue-200 space-y-2 mt-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-600 dark:text-gray-400">{t('cpu_frequency')}</span>
+                      <div className="flex items-center gap-1.5">
+                        <button type="button" onClick={() => setState((p) => ({ ...p, cpuFreq: Math.max(baseFreq, (p.cpuFreq || baseFreq) - 25) }))}
+                          className="w-9 h-8 rounded-lg border border-slate-300 dark:border-gray-600 flex items-center justify-center text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
+                          aria-label={t('cpu_oc_decrease')}
+                        >−25</button>
+                        <div className="relative">
+                          <input type="number" min={baseFreq} max={maxFreq} step={25}
+                            value={state.cpuFreq || baseFreq}
+                            onChange={(e) => { const v = e.target.value ? Math.min(Math.max(Number(e.target.value), baseFreq), maxFreq) : baseFreq; setState((p) => ({ ...p, cpuFreq: v })) }}
+                            className="w-24 p-1 pr-9 text-right border border-blue-300 dark:border-blue-600 rounded bg-white dark:bg-gray-800 text-slate-900 dark:text-gray-100 font-semibold text-sm outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-shadow [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            aria-label={t('cpu_frequency')}
+                          />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400 dark:text-gray-500 pointer-events-none select-none">{t('mhz')}</span>
+                        </div>
+                        <button type="button" onClick={() => setState((p) => ({ ...p, cpuFreq: Math.min(maxFreq, (p.cpuFreq || baseFreq) + 25) }))}
+                          className="w-9 h-8 rounded-lg border border-slate-300 dark:border-gray-600 flex items-center justify-center text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
+                          aria-label={t('cpu_oc_increase')}
+                        >+25</button>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => setState((p) => ({ ...p, cpuFreq: 0 }))}
+                      className={clsx('w-full py-1 rounded text-xs font-medium transition-colors', !state.cpuFreq ? 'bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200' : 'bg-white dark:bg-gray-800/60 text-slate-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700')}
+                    >{t('default')}</button>
+                    <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-0.5">
+                      <span>{baseFreq} {t('mhz')}</span><span>{maxFreq} {t('mhz')}</span>
+                    </div>
                   </div>
-                  <Slider min={selectedCPU.frequency} max={selectedCPU.max_freq}
-                    step={Math.max(1, Math.round((selectedCPU.max_freq - selectedCPU.frequency) / 20))}
-                    value={state.cpuFreq || selectedCPU.frequency}
-                    onChange={(v) => setState((p) => ({ ...p, cpuFreq: v }))}
-                    className="w-full h-1.5 bg-blue-200 dark:bg-blue-800 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  />
-                  <div className="flex justify-between text-xs text-slate-400 dark:text-gray-500 mt-0.5">
-                    <span>{selectedCPU.frequency} {t('mhz')}</span><span>{selectedCPU.max_freq} {t('mhz')}</span>
-                  </div>
-                </div>
-              )}
+                )
+              })()}
               {selectedCPU.can_overclock && <div className="text-green-600 dark:text-green-400 font-semibold text-xs">{t('overclockable')}</div>}
             </div>
           )}
