@@ -1,6 +1,6 @@
 # PCBS2 3DMark Calculator
 
-Open-source 3DMark score calculator for PC Building Simulator (v1) and PCBS2 (v2), with a build configurator and a system upgrader. Score formulas are calibrated against actual in-game results.
+Open-source 3DMark score calculator for PC Building Simulator (v1) and PC Building Simulator 2 (v2), with a build configurator and a system upgrader. Score formulas are calibrated against actual in-game results.
 
 ## Features
 
@@ -13,20 +13,9 @@ Open-source 3DMark score calculator for PC Building Simulator (v1) and PCBS2 (v2
 - 15 languages (English, Russian, Ukrainian, Korean, Chinese, Japanese, German, Spanish, Italian, Polish, Turkish, Arabic, Portuguese, French, Hindi), RTL for Arabic
 - System-based theme and language defaults, dark/light mode, smooth scrolling
 
-## Tech
+## Stack
 
 Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, PostgreSQL.
-
-## Getting started
-
-```bash
-pnpm install
-DATABASE_URL=postgres://user:pass@host:5432/pcbs2 pnpm dev
-```
-
-Component data lives in PostgreSQL: tables `cpu`, `gpu`, `ram`, `motherboard`, `psu`, `storage`, `cases`, `coolers` for v1 and `v2_*` for v2.
-
-Build: `pnpm build && pnpm start` · Lint: `pnpm lint`
 
 ---
 
