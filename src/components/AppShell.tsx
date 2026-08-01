@@ -114,27 +114,28 @@ export default function AppShell({ children, levelSettings, onOpenSettings, game
     router.push(`${pathname}?version=${v}`)
   }
 
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('pcbs2_dark')
-      if (stored === 'true') {
-        document.documentElement.classList.add('dark')
-        return true
-      }
-      if (stored === 'false') {
-        document.documentElement.classList.remove('dark')
-        return false
-      }
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      document.documentElement.classList.toggle('dark', systemDark)
-      return systemDark
-    }
-    return false
-  })
+  const [darkMode, setDarkMode] = useState(false)
   const [starCount, setStarCount] = useState<number | null>(null)
   const [stuckTop, setStuckTop] = useState(false)
   const [stuckTabs, setStuckTabs] = useState(false)
   const rafRef = useRef<number>(0)
+
+  useEffect(() => {
+    const stored = localStorage.getItem('pcbs2_dark')
+    if (stored === 'true') {
+      document.documentElement.classList.add('dark')
+      setDarkMode(true)
+      return
+    }
+    if (stored === 'false') {
+      document.documentElement.classList.remove('dark')
+      setDarkMode(false)
+      return
+    }
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    document.documentElement.classList.toggle('dark', systemDark)
+    setDarkMode(systemDark)
+  }, [])
 
   useEffect(() => {
     const stored = localStorage.getItem('pcbs2_dark')
