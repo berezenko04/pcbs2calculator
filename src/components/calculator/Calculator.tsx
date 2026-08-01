@@ -28,7 +28,10 @@ export default function Calculator({ cpus, gpus, rams, levelSettings, gameVersio
   const { t } = useLang()
   const [state, setState] = useState<CalculatorState>(() => ({ ...DEFAULT_STATE, ...initialState }))
   const stateRef = useRef(state)
-  stateRef.current = state
+
+  useEffect(() => {
+    stateRef.current = state
+  })
 
   useEffect(() => {
     if (!onStateChange) return
