@@ -121,6 +121,13 @@ export default function AppShell({ children, levelSettings, onOpenSettings, game
         document.documentElement.classList.add('dark')
         return true
       }
+      if (stored === 'false') {
+        document.documentElement.classList.remove('dark')
+        return false
+      }
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      document.documentElement.classList.toggle('dark', systemDark)
+      return systemDark
     }
     return false
   })
@@ -128,6 +135,18 @@ export default function AppShell({ children, levelSettings, onOpenSettings, game
   const [stuckTop, setStuckTop] = useState(false)
   const [stuckTabs, setStuckTabs] = useState(false)
   const rafRef = useRef<number>(0)
+
+  useEffect(() => {
+    const stored = localStorage.getItem('pcbs2_dark')
+    if (stored === 'true' || stored === 'false') return
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = (e: MediaQueryListEvent) => {
+      document.documentElement.classList.toggle('dark', e.matches)
+      setDarkMode(e.matches)
+    }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
 
   useEffect(() => {
     const lenis = new Lenis()
