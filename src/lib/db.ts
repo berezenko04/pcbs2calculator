@@ -1,7 +1,18 @@
 import { Pool } from 'pg'
 import type { GameVersion } from './gameVersion'
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const connectionString = process.env.DATABASE_URL
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL is not set. Add it to your environment (e.g. Vercel Project Settings → Environment Variables).')
+}
+
+const needsSsl = connectionString.includes('sslmode') || process.env.PGSSL === 'true'
+
+const pool = new Pool({
+  connectionString,
+  ssl: needsSsl ? { rejectUnauthorized: false } : undefined,
+})
 
 export async function query(text: string, params?: any[]) {
   const client = await pool.connect()
