@@ -1,7 +1,7 @@
 # PCBS2 3DMark Calculator
 
-<a href="https://pcbs2calculator.vercel.app" target="_blank">
-  <img src="https://i.ibb.co/N6TCR4hg/pcbs.png" width="1200" alt="pcbs" border="0" />
+<a href="https://pcbs2calculator.vercel.app" target="_blank" style="display: 'block'; width: 1200px; height: 480px;">
+  <img src="https://i.ibb.co/G3G3Wnth/pcbs.webp" alt="pcbs" border="0" style="width: 100%; height: 100%;"/>
 </a>
 
 Open-source 3DMark score calculator for PC Building Simulator (v1) and PC Building Simulator 2 (v2), with a build configurator and a system upgrader. Score formulas are calibrated against actual in-game results.
