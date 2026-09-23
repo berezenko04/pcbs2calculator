@@ -132,9 +132,10 @@ export default function BuildUpgrader({ cpus, gpus, rams, motherboards, cases, l
       const totalScore = calcTotalScore(cs, gs)
       if (totalScore < targetScore || totalScore > targetScore + offset) return
       if (totalScore <= oldTotalScore) return
-      if (newCpu && totalScore <= calcTotalScore(getCpuScore(newCpu), baseGpuScore)) return
-      if (newGpu && totalScore <= calcTotalScore(baseCpuScore, getGpuScore(newGpu))) return
-      if (newRam && totalScore <= calcTotalScore(getRamScore(newRam), baseGpuScore)) return
+      const swapped = (newCpu ? 1 : 0) + (newGpu ? 1 : 0) + (newRam ? 1 : 0)
+      if (newCpu && swapped > 1 && totalScore <= calcTotalScore(getCpuScore(newCpu), baseGpuScore)) return
+      if (newGpu && swapped > 1 && totalScore <= calcTotalScore(baseCpuScore, getGpuScore(newGpu))) return
+      if (newRam && swapped > 1 && totalScore <= calcTotalScore(getRamScore(newRam), baseGpuScore)) return
       if (strategy === 'all' && newCpu && newGpu && newRam) {
         if (totalScore <= calcTotalScore(cs, baseGpuScore)) return
         if (totalScore <= calcTotalScore(baseCpuScore, gs)) return
